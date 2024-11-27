@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "554381031992",
+    "project_id": "workoutapp-95a25",
+    "storage_bucket": "workoutapp-95a25.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554381031992:android:394d94c879dc59b6b904cd",
+        "android_client_info": {
+          "package_name": "com.kurs.workout.kurs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoGBMwg3TWtoqNz3ldMncxA4Vb1OL4S5E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554381031992:android:778a116d4608cbe3b904cd",
+        "android_client_info": {
+          "package_name": "com.kurs.workout.kurs.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoGBMwg3TWtoqNz3ldMncxA4Vb1OL4S5E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
