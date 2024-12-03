@@ -15,7 +15,7 @@ void main() async {
   // Run the app with Device Preview
   runApp(
     DevicePreview(
-      enabled: true,
+      enabled: false,
       builder: (context) => MyApp(), // Wrap your app
     ),
   );

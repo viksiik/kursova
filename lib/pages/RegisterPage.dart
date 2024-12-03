@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kurs/components/ButtonField.dart';
 import 'package:kurs/components/LogoImage.dart';
-import 'package:kurs/pages/HomePage.dart';
+import 'package:kurs/infos/GenderPage.dart';
 
 import '../components/DialogMessage.dart';
 import '../services/GoogleSignIn.dart';
@@ -50,7 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
           // Якщо користувач авторизований, перенаправляємо на HomePage
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomePage()),
+            MaterialPageRoute(builder: (context) => GenderPage(),),
           );
         } else {
           // Якщо користувач не знайдений, перенаправляємо на welcomeScreen

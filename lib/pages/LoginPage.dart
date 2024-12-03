@@ -2,10 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kurs/components/ButtonField.dart';
 import 'package:kurs/components/LogoImage.dart';
 import 'package:kurs/pages/ForgotPasswordPage.dart';
-import 'package:kurs/pages/HomePage.dart';
+import 'package:kurs/infos/GenderPage.dart';
 import 'package:kurs/services/GoogleSignIn.dart';
 
 import '../components/DialogMessage.dart';
+import '../services/GithubSignIn.dart';
 import 'RegisterPage.dart';
 import '../components/InputField.dart';
 import 'package:flutter/material.dart';
@@ -48,8 +49,8 @@ class _LoginPageState extends State<LoginPage> {
         // Якщо користувач авторизований, перенаправляємо на HomePage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+          MaterialPageRoute(builder: (context) => GenderPage(),
+        ),);
       } else {
         // Якщо користувач не знайдений, перенаправляємо на welcomeScreen
         Navigator.pushReplacement(
@@ -203,12 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(width: 32.0),
                       LogoImage(
                           imagePath: 'assets/images/github_logo.png',
-                          onTap: () => GoogleAuthService().signInWithGoogle(context),
-                      ),
-                      const SizedBox(width: 32.0),
-                      LogoImage(
-                          imagePath: 'assets/images/fb_logo.png',
-                          onTap: () => GoogleAuthService().signInWithGoogle(context),
+                          onTap: () => GithubAuthService().signInWithGithub(context),
                       ),
                     ]
                   ),

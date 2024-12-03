@@ -1,7 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kurs/components/ButtonField.dart';
-import 'package:kurs/components/LogoImage.dart';
-import 'package:kurs/pages/HomePage.dart';
 
 import 'package:flutter/material.dart';
 

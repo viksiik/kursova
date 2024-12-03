@@ -32,7 +32,11 @@ class InputField extends StatelessWidget {
         fillColor: const Color(0xFFFBF4FF),
         filled: true,
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey)
+        hintStyle: TextStyle(
+          color: Colors.grey,
+          fontSize: 14.0,
+          fontFamily: 'Montserrat'
+        )
        ),
       ),
     );
