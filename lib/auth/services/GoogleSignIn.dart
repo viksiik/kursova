@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:kurs/infos/GenderPage.dart';
+import '../infos/GenderPage.dart';
 import '../components/DialogMessage.dart';
 
 class GoogleAuthService {

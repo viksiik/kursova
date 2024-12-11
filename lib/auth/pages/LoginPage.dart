@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:kurs/components/ButtonField.dart';
-import 'package:kurs/components/LogoImage.dart';
-import 'package:kurs/pages/ForgotPasswordPage.dart';
-import 'package:kurs/infos/GenderPage.dart';
-import 'package:kurs/services/GoogleSignIn.dart';
+import 'package:kurs/program/MainPage.dart';
+import '../components/ButtonField.dart';
+import '../components/LogoImage.dart';
+import '../pages/ForgotPasswordPage.dart';
+import '../infos/GenderPage.dart';
+import '../services/GoogleSignIn.dart';
 
 import '../components/DialogMessage.dart';
 import '../services/GithubSignIn.dart';
@@ -49,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
         // Якщо користувач авторизований, перенаправляємо на HomePage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => GenderPage(),
+          MaterialPageRoute(builder: (context) => MainPage(),
         ),);
       } else {
         // Якщо користувач не знайдений, перенаправляємо на welcomeScreen

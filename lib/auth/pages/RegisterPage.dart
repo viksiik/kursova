@@ -1,13 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:kurs/components/ButtonField.dart';
-import 'package:kurs/components/LogoImage.dart';
-import 'package:kurs/infos/GenderPage.dart';
+import '../components/ButtonField.dart';
+import '../components/LogoImage.dart';
+import '../infos/GenderPage.dart';
 
+import '../components/AddData.dart';
 import '../components/DialogMessage.dart';
 import '../services/GoogleSignIn.dart';
 import 'LoginPage.dart';
 import '../components/InputField.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required void Function() onTap});
@@ -20,6 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final FirestoreHelper firestoreHelper = FirestoreHelper();
 
   void signUserUp() async {
     showDialog(
@@ -43,6 +47,11 @@ class _RegisterPageState extends State<RegisterPage> {
         // Після успішного входу, перевіряємо стан автентифікації
         User? user = userCredential.user;
 
+        firestoreHelper.setData(
+          "users",
+          {"Email": emailController.text.trim()},
+        );
+
         // Close the loading dialog
         Navigator.pop(context);
 
@@ -50,7 +59,15 @@ class _RegisterPageState extends State<RegisterPage> {
           // Якщо користувач авторизований, перенаправляємо на HomePage
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => GenderPage(),),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => GenderPage(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+            ),
           );
         } else {
           // Якщо користувач не знайдений, перенаправляємо на welcomeScreen
@@ -85,6 +102,19 @@ class _RegisterPageState extends State<RegisterPage> {
       ErrorDialog.show(context, 'Something went wrong. Try again later.', 'Error');
     }
   }
+
+  // Future addUserDetails(String email) async {
+  //   try {
+  //     await FirebaseFirestore.instance.collection('users').add({
+  //       'Email': email,
+  //       'Username': 'Hello',
+  //     });
+  //     print("User added successfully!");
+  //   } catch (e) {
+  //     print("Error adding user: $e");
+  //   }
+  // }
+
 
   @override
   void dispose() {
@@ -131,22 +161,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   obscureText: true,
                 ),
 
-                //confirm password input
                 InputField(
                   controller: confirmPasswordController,
                   hintText: "Confirm password",
                   obscureText: true,
                 ),
 
-                //sign in button
                 ButtonField(
                   onTap: () {
-                    signUserUp(); // Ваш метод входу
+                    signUserUp();
                   },
                   buttonText: 'Sign up',
                 ),
 
-                // continue with
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
                   margin: const EdgeInsets.only(top: 36.0),
@@ -178,7 +205,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                // gl + gh + fb buttons
+                // gl + gh buttons
                 Center(
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -191,11 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           imagePath: 'assets/images/github_logo.png',
                           onTap: () => GoogleAuthService().signInWithGoogle(context),
                         ),
-                        const SizedBox(width: 32.0),
-                        LogoImage(
-                          imagePath: 'assets/images/fb_logo.png',
-                          onTap: () => GoogleAuthService().signInWithGoogle(context),
-                        ),
+
                       ]
                   ),
                 ),

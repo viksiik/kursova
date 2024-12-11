@@ -35,6 +35,8 @@ dependencies:
   firebase_auth: ^5.3.3
   google_sign_in: ^6.2.2
   github_sign_in_plus: ^0.0.2
+  cloud_firestore: ^5.5.0
+  fl_chart: ^0.69.2
 
 flutter:
   assets:

@@ -7,16 +7,14 @@ import 'welcomeScreen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Run the app with Device Preview
   runApp(
     DevicePreview(
       enabled: false,
-      builder: (context) => MyApp(), // Wrap your app
+      builder: (context) => MyApp(),
     ),
   );
 }
