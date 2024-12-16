@@ -51,13 +51,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainPage(),
-        ),);
-      } else {
-        // Якщо користувач не знайдений, перенаправляємо на welcomeScreen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => RegisterPage(onTap: () {  },)),
-        );
+          ),);
       }
     } on FirebaseAuthException catch (e) {
       // Close the loading dialog in case of an error
@@ -67,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
 
       // Обробка помилок
       if (e.code == 'user-not-found') {
-        errorMessage = 'Such user was not found.';
+        errorMessage = 'You are not registered.';
       }
       else if (e.code == 'wrong-password') {
         errorMessage = 'Wrong password. Try again.';
@@ -82,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       // Для несподіваних помилок
       ErrorDialog.show(
-         context, 'Something went wrong. Please try again.', 'Error');
+          context, 'Something went wrong. Please try again.', 'Error');
     }
   }
 
@@ -105,31 +99,31 @@ class _LoginPageState extends State<LoginPage> {
               children:[
                 // text
                 Container(
-                  margin: const EdgeInsets.only(top:96.0, bottom: 32.0),
-                  child: const Text("Sign in",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 32.0,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Montserrat',
-                    ),
-                  )
+                    margin: const EdgeInsets.only(top:96.0, bottom: 32.0),
+                    child: const Text("Sign in",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 32.0,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Montserrat',
+                      ),
+                    )
                 ),
-            
+
                 // username input
                 InputField(
                   controller: emailController,
                   hintText: "Email",
                   obscureText: false,
                 ),
-            
+
                 //password input
                 InputField(
                   controller: passwordController,
                   hintText: "Password",
                   obscureText: true,
                 ),
-            
+
                 //forgot password
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 36.0, vertical: 8.0 ),
@@ -153,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-            
+
                 //sign in button
                 ButtonField(
                   onTap: () {
@@ -161,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   buttonText: 'Sign in',
                 ),
-            
+
                 // continue with
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -170,47 +164,47 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Expanded(
                         child: Divider(
-                            thickness: 0.5,
-                            color: Colors.grey[500],
-                          ),
+                          thickness: 0.5,
+                          color: Colors.grey[500],
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text('Or continue with',
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 12.0,
-                          fontFamily: 'Montserrat',
-                        ),
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 12.0,
+                            fontFamily: 'Montserrat',
+                          ),
                         ),
                       ),
                       Expanded(
                         child: Divider(
-                            thickness: 0.5,
-                            color: Colors.grey[500],
+                          thickness: 0.5,
+                          color: Colors.grey[500],
                         ),
                       ),
                     ],
                   ),
                 ),
-            
+
                 // gl + ln + fb buttons
                 Center(
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      LogoImage(
-                        imagePath: 'assets/images/google_logo.png',
-                        onTap: () => GoogleAuthService().signInWithGoogle(context),),
-                      const SizedBox(width: 32.0),
-                      LogoImage(
+                      children: [
+                        LogoImage(
+                          imagePath: 'assets/images/google_logo.png',
+                          onTap: () => GoogleAuthService().signInWithGoogle(context),),
+                        const SizedBox(width: 32.0),
+                        LogoImage(
                           imagePath: 'assets/images/github_logo.png',
                           onTap: () => GithubAuthService().signInWithGithub(context),
-                      ),
-                    ]
+                        ),
+                      ]
                   ),
                 ),
-            
+
                 // sign up
                 Container(
                   margin: const EdgeInsets.only(top: 104),
