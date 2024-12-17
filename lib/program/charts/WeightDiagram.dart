@@ -8,6 +8,7 @@ import 'package:kurs/program/pages/WeightBalancePage.dart'; // Assuming a Weight
 
 import '../../auth/infos/WeightPage.dart';
 import '../../main.dart';
+import '../pages/WaterPage.dart';
 
 class WeightBalanceWidget extends StatefulWidget {
   const WeightBalanceWidget({super.key});
@@ -47,7 +48,6 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
       double sum = 0;
       int count = 0;
 
-      // Конвертуємо всі значення в double
       for (var doc in snapshot.docs) {
         try {
           Map<String, dynamic> rawData = doc.data() as Map<String, dynamic>;
@@ -83,8 +83,6 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     });
   }
 
-
-
   List<FlSpot> _generateChartData() {
     List<DateTime> sortedDates = weightData.keys.toList()..sort();
     return List.generate(sortedDates.length, (index) {
@@ -101,7 +99,23 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
         : 0;
 
     return List.generate(sortedDates.length - startIndex, (index) {
-      DateTime date = sortedDates[startIndex + index];
+      DateTime date = sortedDates[index];
+      return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
+    });
+  }
+
+  List<FlSpot> _generateChartDataForLast7Days() {
+    DateTime today = DateTime.now();
+    DateTime sevenDaysAgo = today.subtract(Duration(days: 7));
+
+    // Filter the data to only include the last 7 days
+    List<DateTime> filteredDates = weightData.keys
+        .where((date) => date.isAfter(sevenDaysAgo) || date.isAtSameMomentAs(sevenDaysAgo))
+        .toList()
+      ..sort(); // Sort the dates in ascending order
+
+    return List.generate(filteredDates.length, (index) {
+      DateTime date = filteredDates[index];
       return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
     });
   }
@@ -195,8 +209,10 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                         interval: 10,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            "${value.toStringAsFixed(1)} kg",
-                            style: const TextStyle(fontSize: 10),
+                            "${value.toStringAsFixed(1)}",
+                            style: const TextStyle(color: Colors.black38,
+                              fontSize: 10,
+                              fontFamily: 'Montserrat',),
                           );
                         },
                       ),
@@ -212,7 +228,9 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                             DateTime date = sortedDates[value.toInt()];
                             return Text(
                               "${date.day} ${_getMonthShort(date.month)}",
-                              style: const TextStyle(fontSize: 10),
+                              style: const TextStyle(color: Colors.black38,
+                                fontSize: 10,
+                                fontFamily: 'Montserrat',),
                             );
                           }
                           return const SizedBox();
@@ -240,6 +258,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                             color: Color(0xFFE6B7FF),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                              fontFamily: 'Montserrat'
                           ),
                         ),
                       ),
@@ -254,6 +273,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                             color: Color(0xFF8CEAF2),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                              fontFamily: 'Montserrat'
                           ),
                         ),
                       ),

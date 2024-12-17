@@ -1,7 +1,12 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+
+import '../../main.dart';
+import 'WaterPage.dart';
 
 class WaterBalancePage extends StatefulWidget {
   const WaterBalancePage({super.key});
@@ -12,28 +17,27 @@ class WaterBalancePage extends StatefulWidget {
 
 class _WaterBalancePageState extends State<WaterBalancePage> {
   String selectedFilter = 'week';
-  Map<String, double> waterStats = {'amount': 0, 'goal': 0};
+  Map<String, int> stats = {'amount': 0};
   final currentUser = FirebaseAuth.instance.currentUser;
 
-  Color waterColor = Color(0xFF76C7C0);
-  Color goalColor = Color(0xFFFBF4FF);
+  Color absColor = Color(0xFFFFDC66);
+  Color fullColor = Color(0xFF8587F8);
+  Color lowerColor = Color(0xFF8CEAF2);
 
-  double waterRounded = 0;
-  double goalRounded = 0;
-
-  List<FlSpot> waterDataPoints = [];
-  List<FlSpot> goalDataPoints = [];
+  Map<DateTime, int> waterData = {}; // Changed from double to int for water
+  int todayWater = 0;
+  int goalWater = 2100;
+  int averageWater = 0;
 
   @override
   void initState() {
     super.initState();
-    fetchWaterData();
+    fetchActivityData();
   }
 
-  void fetchWaterData() async {
+  void fetchActivityData() async {
     DateTime now = DateTime.now();
     DateTime startDate;
-    int goalWater = 2200;
 
     if (currentUser == null) {
       print("No authenticated user found.");
@@ -42,67 +46,71 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
     switch (selectedFilter) {
       case 'week':
-        startDate = now.subtract(Duration(days: now.weekday - 1)); // Початок тижня (понеділок)
+        startDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week (Monday)
         break;
       case 'month':
-        startDate = DateTime(now.year, now.month, 1); // Початок місяця
+        startDate = DateTime(now.year, now.month, 1); // Start of the month
         break;
       case 'year':
-        startDate = DateTime(now.year); // Початок року
+        startDate = DateTime(now.year, 1, 1);
         break;
-      default: // All time
-        startDate = DateTime(2000); // Дата для всіх документів
+      default:
+        startDate = DateTime(2000);
         break;
     }
 
-    final waterRef = FirebaseFirestore.instance
+    FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser?.uid)
-        .collection('water_balance');
+        .collection('water_balance')
+        .snapshots()
+        .listen((QuerySnapshot snapshot) {
+      Map<DateTime, int> tempData = {};
+      int sum = 0;
+      int count = 0;
 
-    // Додаємо фільтрацію за датою
-    QuerySnapshot waterSnapshot = await waterRef.get();
+      for (var doc in snapshot.docs) {
+        try {
+          Map<String, dynamic> rawData = doc.data() as Map<String, dynamic>;
 
-    Map<String, double> tempStats = {'amount': 0};
+          print("Raw data: $rawData");
 
-    waterDataPoints.clear();
-    goalDataPoints.clear();
+          int waterAmount = 0;
+          if (rawData.containsKey('amount')) {
+            if (rawData['amount'] is double) {
+              waterAmount = (rawData['amount'] as double).toInt();
+            } else if (rawData['amount'] is int) {
+              waterAmount = rawData['amount'] as int;
+            } else {
+              print("Unexpected type for 'amount': ${rawData['amount'].runtimeType}");
+            }
+          }
 
-    for (var doc in waterSnapshot.docs) {
-      try {
-        DateTime date = DateTime.parse(doc.id);
+          DateTime date = DateTime.parse(doc.id); // Парсимо ID як дату
+          //int waterAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
 
-        if (date.isAfter(startDate) || date.isAtSameMomentAs(startDate)) {
-          double amount = (doc['amount'] is int ? (doc['amount'] as int).toDouble() : doc['amount'] as double) ?? 0.0;
-          double goal = goalWater.toDouble();  // Ensure goal is treated as double
+          if (date.isAfter(startDate.subtract(Duration(days: 1)))) {
+            tempData[date] = waterAmount;
 
-          tempStats['amount'] = tempStats['amount']! + amount;
-          tempStats['goal'] = goalWater.toDouble(); // Ensure goal is treated as double
+            if (date.year == now.year && date.month == now.month && date.day == now.day) {
+              todayWater = waterAmount;
+            }
 
-          // Ensure both lists are properly initialized with data before usage
-          waterDataPoints.add(FlSpot(date.millisecondsSinceEpoch.toDouble(), amount));
-          goalDataPoints.add(FlSpot(date.millisecondsSinceEpoch.toDouble(), goal));
+            sum += waterAmount;
+            count++;
+          }
+
+        } catch (e) {
+          print("Error parsing document: $e");
         }
-      } catch (e) {
-        print('Error parsing document: ${doc.id}, Error: $e');
       }
-    }
 
-    setState(() {
-      waterStats = tempStats;
-
-      // Розрахунок відсотків
-      final double sumWater = waterStats['amount']! + waterStats['goal']!;
-      if (sumWater > 0) {
-        waterRounded = ((waterStats['amount']! / sumWater) * 100).roundToDouble();
-        goalRounded = ((waterStats['goal']! / sumWater) * 100).roundToDouble();
-      } else {
-        waterRounded = 0;
-        goalRounded = 0;
-      }
+      setState(() {
+        waterData = tempData;
+        averageWater = count > 0 ? sum ~/ count : 0;
+      });
     });
   }
-
 
   Widget buildFilterButton(String filterName) {
     return GestureDetector(
@@ -110,7 +118,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
         setState(() {
           selectedFilter = filterName;
         });
-        fetchWaterData();
+        fetchActivityData();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -123,23 +131,22 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
             width: 1, // Товщина обведення
           ),
+
           boxShadow: selectedFilter == filterName
               ? [
             BoxShadow(
               color: Color(0xFF8587F8).withOpacity(0.4),
               spreadRadius: 2,
               blurRadius: 6,
-              offset: Offset(0, 3), // Зміщення тіні
+              offset: Offset(0, 3),
             ),
           ]
-              : [
-            BoxShadow(
+              : [BoxShadow(
               color: Colors.grey.withOpacity(0.2),
               spreadRadius: 2,
               blurRadius: 6,
-              offset: Offset(0, 3), // Зміщення тіні
-            ),
-          ],
+              offset: Offset(0, 3)
+          ),],
         ),
         child: Text(
           filterName,
@@ -157,29 +164,189 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     );
   }
 
-  Widget _buildChart() {
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(show: true),
-        titlesData: FlTitlesData(show: true),
-        borderData: FlBorderData(show: true),
-        lineBarsData: [
-          LineChartBarData(
-            spots: waterDataPoints,
-            isCurved: true,
-            color: waterColor,
-            belowBarData: BarAreaData(show: true, color: waterColor.withOpacity(0.3)),
-            dotData: FlDotData(show: false),
+  double _calculateMaxY() {
+    if (waterData.isEmpty) {
+      return 2500; // Повертає стандартне значення, якщо немає даних
+    }
+
+    int maxDataValue = waterData.values
+        .where((value) => value != null) // Фільтруємо null значення
+        .fold(0, (prev, value) => max(prev, value)); // Знаходимо максимум
+
+    // Округлення вгору до найближчого кратного 5
+    double roundedValue = (max(maxDataValue, 2100) + 400) / 5; // Додаємо 4 для округлення
+    roundedValue = roundedValue.ceil() * 5;
+
+    return roundedValue;
+  }
+
+
+  List<FlSpot> _generateChartDataForLastDays(int days) {
+    List<DateTime> sortedDates = waterData.keys.toList()..sort();
+    final int startIndex = sortedDates.length > days
+        ? sortedDates.length - days
+        : 0;
+
+    return List.generate(sortedDates.length - startIndex, (index) {
+      DateTime date = sortedDates[index];
+      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0.0);  // Double for chart
+    });
+  }
+
+  Widget _buildChart(Map<String, dynamic> data) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12.0),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 250,
+            width: 400,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false, drawVerticalLine: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: 500,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          "${value.toStringAsFixed(0)}",  // Integer format
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontFamily: 'Montserrat',
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        final List<DateTime> sortedDates = waterData.keys.toList()..sort();
+                        if (value.toInt() < sortedDates.length) {
+                          DateTime date = sortedDates[value.toInt()];
+                          return Text(
+                            "${date.day} ${_getMonthShort(date.month)}",
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'Montserrat',
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(),
+                  topTitles: AxisTitles(),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                ),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: goalWater.toDouble(),
+                      color: Color(0xFFE6B7FF),
+                      strokeWidth: 2,
+                      dashArray: [10, 4],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        labelResolver: (line) => "Goal: $goalWater ml",
+                        style: const TextStyle(
+                          color: Color(0xFFE6B7FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: averageWater.toDouble(),
+                      color: Color(0xFF8CEAF2).withOpacity(0.3),
+                      strokeWidth: 2,
+                      label: HorizontalLineLabel(
+                        show: true,
+                        labelResolver: (line) =>
+                        "Avg: ${averageWater.toStringAsFixed(1)} ml",
+                        style: const TextStyle(
+                          color: Color(0xFF8CEAF2),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                minY: 0,
+                maxY: _calculateMaxY(),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _generateChartDataForLastDays(7),
+                    isCurved: false,
+                    color: Color(0xFF8587F8),
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    belowBarData: BarAreaData(show: false),
+                    dotData: FlDotData(show: true),
+                  ),
+                ],
+                backgroundColor: Colors.white.withOpacity(0.2),
+              ),
+            ),
           ),
-          LineChartBarData(
-            spots: goalDataPoints,
-            isCurved: true,
-            color: goalColor,
-            belowBarData: BarAreaData(show: true, color: goalColor.withOpacity(0.3)),
-            dotData: FlDotData(show: false),
+
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 16.0),
+              _buildStatRow('Today', todayWater.toDouble()),
+              const SizedBox(height: 10),
+              _buildStatRow('Goal', goalWater.toDouble()),
+              const SizedBox(height: 10),
+              _buildStatRow('Average', averageWater.toDouble()),
+            ],
           ),
+
         ],
       ),
+    );
+  }
+
+  Widget _buildStatRow(String category, double value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$category:', // Display the value as a rounded double
+              style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w500
+              ),
+            ),
+            Text(
+              ' ${value.toStringAsFixed(1)} ml', // Display the value as a rounded double
+              style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -188,84 +355,50 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     return Scaffold(
       backgroundColor: Color(0xFFFBF4FF),
       appBar: AppBar(
-        backgroundColor: Color(0xFFFBF4FF),
-        flexibleSpace: Container(
-          margin: const EdgeInsets.only(top: 16.0),
-          child: Center(
-            child: const Text(
-              "Water Balance",
-              style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.w500
+          backgroundColor: Color(0xFFFBF4FF),
+          flexibleSpace: Container(
+            margin: const EdgeInsets.only(top: 16.0),
+            child: Center(
+              child: const Text("Water Balance",
+                style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.w500
+                ),
               ),
             ),
+          )
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  buildFilterButton('week'),
+                  const SizedBox(width: 8),
+                  buildFilterButton('month'),
+                  const SizedBox(width: 8),
+                  buildFilterButton('year'),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+              _buildChart(stats),
+            ],
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          // Фільтри
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              buildFilterButton('week'),
-              const SizedBox(width: 8),
-              buildFilterButton('month'),
-              const SizedBox(width: 8),
-              buildFilterButton('year'),
-              const SizedBox(width: 8),
-              buildFilterButton('all time'),
-            ],
-          ),
-          const SizedBox(height: 32),
-          // Графік
-          Container(
-            height: 300,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: _buildChart(),
-          ),
-          const SizedBox(height: 24),
-          // Підсумки
-          Column(
-            children: [
-              buildStatRow('Water Intake', waterColor, waterRounded),
-              const SizedBox(height: 4.0),
-              buildStatRow('Goal', goalColor, goalRounded),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
       ),
     );
   }
 
-  Widget buildStatRow(String label, Color color, double percentage) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 88.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(backgroundColor: color, radius: 8),
-              const SizedBox(width: 12),
-              Text(label, style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0
-              ),),
-            ],
-          ),
-          Text('$percentage%',
-              style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0
-              )
-          ),
-        ],
-      ),
-    );
+  String _getMonthShort(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
   }
 }

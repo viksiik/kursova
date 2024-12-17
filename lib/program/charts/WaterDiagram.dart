@@ -89,7 +89,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
         : 0;
 
     return List.generate(sortedDates.length - startIndex, (index) {
-      DateTime date = sortedDates[startIndex + index];
+      DateTime date = sortedDates[index];
       return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0);
     });
   }
@@ -180,8 +180,11 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                     interval: 500,
                     getTitlesWidget: (value, meta) {
                       return Text(
-                        "${value.toInt()} ml",
-                        style: const TextStyle(fontSize: 10),
+                        "${value.toInt()}",
+                        style: const TextStyle(
+                          color: Colors.black38,
+                          fontSize: 10,
+                          fontFamily: 'Montserrat',),
                       );
                     },
                   ),
@@ -197,7 +200,11 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                         DateTime date = sortedDates[value.toInt()];
                         return Text(
                           "${date.day} ${_getMonthShort(date.month)}",
-                          style: const TextStyle(fontSize: 10),
+                          style: const TextStyle(
+                            color: Colors.black38,
+                            fontSize: 10,
+                            fontFamily: 'Montserrat',
+                          ),
                         );
                       }
                       return const SizedBox();
@@ -225,6 +232,8 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                         color: Color(0xFFE6B7FF),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'Montserrat',
+
                       ),
                     ),
                   ),
@@ -238,6 +247,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                       style: const TextStyle(
                         color: Color(0xFF8CEAF2),
                         fontSize: 10,
+                        fontFamily: 'Montserrat',
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -11,7 +11,7 @@ class ActivityPage extends StatefulWidget {
 }
 
 class _ActivityPageState extends State<ActivityPage> {
-  String selectedFilter = 'day';
+  String selectedFilter = 'all time';
   Map<String, int> stats = {'abs': 0, 'lower_body': 0, 'full_body': 0};
   final currentUser = FirebaseAuth.instance.currentUser;
 

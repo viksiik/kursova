@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:kurs/program/charts/WeightDiagram.dart';
-import '../BottomBar.dart'; // Ваш кастомний BottomNavBar
-import '../profile/ProfilePage.dart';
-import '../workouts/WorkoutPage.dart';
-import 'charts/ActivityChart.dart';
-import 'charts/MoodChart.dart';
-import 'charts/WaterDiagram.dart';
 
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+import '../BottomBar.dart';
+import '../profile/ProfilePage.dart';
+import '../program/MainPage.dart';
+
+class MainWorkoutPage extends StatefulWidget {
+  const MainWorkoutPage({super.key});
 
   @override
-  _MainPageState createState() => _MainPageState();
+  _MainWorkoutPageState createState() => _MainWorkoutPageState();
 }
 
-class _MainPageState extends State<MainPage> {
-  int _currentIndex = 0; // Індекс вибраної вкладки
+class _MainWorkoutPageState extends State<MainWorkoutPage> {
+  int _currentIndex = 1; // Індекс вибраної вкладки
 
   void _onNavTap(int index) {
-    if (index == 1) {
-      // Перенаправлення на Workouts Page
+    if (index == 0) {
+      // Перенаправлення на Home Page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainWorkoutPage()),
+        MaterialPageRoute(builder: (context) => const MainPage()),
       );
     } else if (index == 2) {
       // Перенаправлення на Profile Page
@@ -31,7 +29,6 @@ class _MainPageState extends State<MainPage> {
         MaterialPageRoute(builder: (context) => const MainProfilePage()),
       );
     } else {
-      // Залишаємося на поточній сторінці
       setState(() {
         _currentIndex = index;
       });
@@ -47,12 +44,9 @@ class _MainPageState extends State<MainPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const SizedBox(height: 32.0),
-            ActivityChart(),
             const SizedBox(height: 4.0),
-            const WaterBalanceWidget(),
             const SizedBox(height: 12.0),
             const WeightBalanceWidget(),
-            MoodTracker(),
             //BottomNav()
           ],
         ),
