@@ -28,7 +28,7 @@ class _MainPageState extends State<MainPage> {
       // Перенаправлення на Profile Page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainProfilePage()),
+        MaterialPageRoute(builder: (context) => UserProfilePage()),
       );
     } else {
       // Залишаємося на поточній сторінці

@@ -37,6 +37,8 @@ dependencies:
   github_sign_in_plus: ^0.0.2
   cloud_firestore: ^5.5.0
   fl_chart: ^0.69.2
+  image_picker: ^1.0.1
+  firebase_storage: ^12.3.6
 
 flutter:
   assets:
