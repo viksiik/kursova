@@ -15,26 +15,29 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
 
   final Color progressColor = Color(0xFF8587F8); // Color for progress indicator
 
-  Future<Map<String, dynamic>?> fetchCurrentProgram() async {
+  Stream<Map<String, dynamic>?> fetchCurrentProgram() {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
       print("No authenticated user found.");
-      return null;
+      return Stream.value(null); // Якщо користувач не аутентифікований, повертаємо потік з null.
     }
 
-    final snapshot = await FirebaseFirestore.instance
+    return FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser.uid)
         .collection('currentProgram')
-        .get();
+        .where('isActive', isEqualTo: true)
+        .snapshots() // Використовуємо snapshots() для реального часу
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) {
+        return null; // Якщо немає активної програми
+      }
 
-    if (snapshot.docs.isEmpty) return null;
-
-    final programData = snapshot.docs.first.data() as Map<String, dynamic>?;
-
-    print('Fetched program data: $programData');
-    return programData;
+      final programData = snapshot.docs.first.data() as Map<String, dynamic>?;
+      print('Fetched active program data: $programData');
+      return programData;
+    });
   }
 
 
@@ -46,8 +49,8 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: fetchCurrentProgram(),
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: fetchCurrentProgram(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -60,8 +63,27 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
         final programData = snapshot.data;
 
         if (programData == null || programData.isEmpty) {
-          return Center(
-            child: Text("No active program found."),
+          return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 110.0, vertical: 48.0),
+              decoration: BoxDecoration(
+                color: Color(0xFFE6B7FF),
+                borderRadius: BorderRadius.circular(16.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text('No active workout',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
           );
         }
 
@@ -71,8 +93,8 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
   }
 
   Widget _buildCurrentProgram(BuildContext context, Map<String, dynamic> programData) {
-    String programId = programData['title'] ?? 'Unnamed Program';
-    final String programName = programData['title'] ?? 'Unnamed Program';
+    String programId = programData['programId'] ?? 'Unnamed Program';
+    final String programName = programData['programId'] ?? 'Unnamed Program';
     final int doneDays = int.tryParse(programData['doneDays'].toString()) ?? 0;
     final int totalDays = int.tryParse(programData['totalDays'].toString()) ?? 28;
     final double progress = doneDays / totalDays;
@@ -81,7 +103,7 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 24.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFFE6B7FF),
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
@@ -120,38 +142,76 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          //const SizedBox(height: 8),
+          Container(
+            margin: const EdgeInsets.only(right: 32.0),
+            alignment: Alignment.centerRight,
+            child: Text(
+              programName,
+              style: const TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 20.0,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
           Row(
             children: [
+              Container(
+                //padding: const EdgeInsets.only(bottom: 16.0),
+                height: 132,
+                width: 132,
+                decoration: BoxDecoration(
+                  color: Color(0xFFE6B7FF),
+                  borderRadius: BorderRadius.circular(16.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8.0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Image.asset(
+                  programData['imageUrl'],
+                  fit: BoxFit.cover,
+                ),
+              ),
               Expanded(
                 child: SizedBox(
                   height: 124.0,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      CircularProgressIndicator(
-                        value: progress,
-                        color: progressColor,
-                        backgroundColor: Colors.grey[200],
-                        strokeWidth: 12.0,
+                      SizedBox(
+                        width: 56.0, // Ширина кола
+                        height: 56.0, // Висота кола
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          color: progressColor,
+                          backgroundColor: Colors.grey[200],
+                          strokeWidth: 8.0,
+                        ),
                       ),
+
                       Text(
                         '${(progress * 100).toStringAsFixed(0)}%',
                         style: const TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 16.0,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetail("Program", programName),
                   _buildDetail("Done Days", "$doneDays"),
                   _buildDetail("Total Days", "$totalDays"),
                 ],

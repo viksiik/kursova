@@ -49,7 +49,7 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
 
           if (weeks > 0) {
             setState(() {
-              _totalDays = weeks * 9;
+              _totalDays = weeks * 7;
             });
             print('Total Days: $_totalDays');
 
@@ -142,8 +142,77 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
       print('Error fetching user progress: $e');
     }
   }
+  /// Перевіряє, чи завершено програму.
+  Future<void> _checkProgramCompletion() async {
+    final user = FirebaseAuth.instance.currentUser;
 
-  /// Відмічає день як виконаний.
+    if (user == null || widget.programId.isEmpty) {
+      print('Error: Invalid user or program ID');
+      return;
+    }
+
+    try {
+      if (_completedDays == _totalDays) {
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('currentProgram')
+            .doc(widget.programId)
+            .update({
+          'isActive': false, // Встановлюємо воркаут як неактивний
+          'completionDate': DateTime.now().toIso8601String(), // Додаємо дату завершення
+        });
+
+        _showMessage("Congratulations! You have completed this program.");
+
+        setState(() {
+          // Локально оновлюємо стан, щоб відобразити зміни
+          _completedDays = _totalDays;
+        });
+      }
+    } catch (e) {
+      print('Error checking program completion: $e');
+    }
+  }
+
+  /// Завершує програму вручну.
+  Future<void> _stopProgramManually() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || widget.programId.isEmpty) {
+      print('Error: Invalid user or program ID');
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('currentProgram')
+          .doc(widget.programId)
+          .update({
+        'isActive': false, // Зупиняємо воркаут
+        'StoppedDate': DateTime.now().toIso8601String(), // Фіксуємо дату зупинки
+      });
+
+      _showMessage("Program has been stopped.");
+
+      setState(() {
+        _completedDays = 0; // Скидаємо виконані дні
+      });
+    } catch (e) {
+      print('Error stopping program manually: $e');
+    }
+  }
+
+  /// Функція для показу повідомлення.
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+
   Future<void> _markDayAsCompleted(int dayNumber) async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -154,6 +223,7 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
 
     if (dayNumber > _completedDays) {
       try {
+        // Оновлення прогресу користувача в поточній програмі
         await _firestore
             .collection('users')
             .doc(user.uid)
@@ -161,18 +231,73 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
             .doc(widget.programId)
             .set({
           'doneDays': dayNumber,
-          'totalDays': _totalDays, // Оновлення totalDays
+          'totalDays': _totalDays,
           'completedDates': FieldValue.arrayUnion([DateTime.now().toIso8601String()]),
         }, SetOptions(merge: true));
 
         setState(() {
           _completedDays = dayNumber;
         });
+
+        // Завантаження категорії програми
+        final programDoc = await _firestore.collection('programs').doc(widget.programId).get();
+        if (programDoc.exists) {
+          final category = programDoc['category']; // Отримуємо категорію програми
+          print('Program category: $category');
+
+          if (category == 'Abs' || category == 'Lower body' || category == 'Full body') {
+            final currentDate = DateTime.now();
+            final formattedDate =
+                "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
+
+            // Create/update the activity data for the category
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .collection('Activity')
+                .doc(formattedDate) // Використовуємо поточну дату як ідентифікатор документа
+                .set({
+              category: FieldValue.increment(1), // Збільшуємо відповідну категорію на 1
+            }, SetOptions(merge: true));
+
+            print('Incremented $category activity for $formattedDate');
+
+            // Now check and create the other two categories if they don't exist
+            final categoriesToCheck = ['Lower body', 'Full body', 'Abs'];
+            for (var cat in categoriesToCheck) {
+              // If the activity for the category doesn't exist yet, create it
+              final activityDoc = await _firestore
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('Activity')
+                  .doc(formattedDate);
+
+              final activityData = await activityDoc.get();
+              if (activityData.exists && !activityData.data()!.containsKey(cat)) {
+                // If the category does not exist, add it
+                await activityDoc.update({
+                  cat: FieldValue.increment(0), // Initialize the category if not already present
+                });
+                print('Created $cat activity for $formattedDate');
+              }
+            }
+
+          } else {
+            print('Unknown program category: $category');
+          }
+        } else {
+          print('Program document not found');
+        }
+
+        // Перевіряємо завершення програми
+        await _checkProgramCompletion();
       } catch (e) {
         print('Error updating completed days: $e');
       }
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -255,6 +380,21 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
                   ),
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: () async {
+                await _stopProgramManually();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, // Червоний колір для кнопки
+              ),
+              child: const Text(
+                "Stop Program",
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ],

@@ -12,7 +12,7 @@ class ActivityPage extends StatefulWidget {
 
 class _ActivityPageState extends State<ActivityPage> {
   String selectedFilter = 'all time';
-  Map<String, int> stats = {'abs': 0, 'lower_body': 0, 'full_body': 0};
+  Map<String, int> stats = {'Abs': 0, 'Lower body': 0, 'Full body': 0};
   final currentUser = FirebaseAuth.instance.currentUser;
 
   Color abs_color = Color(0xFFFFDC66);
@@ -62,7 +62,7 @@ class _ActivityPageState extends State<ActivityPage> {
     // Додаємо фільтрацію за датою
     QuerySnapshot activitySnapshot = await activityRef.get();
 
-    Map<String, int> tempStats = {'abs': 0, 'lower_body': 0, 'full_body': 0};
+    Map<String, int> tempStats = {'Abs': 0, 'Lower body': 0, 'Full body': 0};
 
     for (var doc in activitySnapshot.docs) {
       try {
@@ -70,13 +70,13 @@ class _ActivityPageState extends State<ActivityPage> {
         DateTime date = DateTime.parse(doc.id);
 
         if (date.isAfter(startDate) || date.isAtSameMomentAs(startDate)) {
-          int absValue = (doc['abs'] as num?)?.toInt() ?? 0;
-          int lowerBodyValue = (doc['lower_body'] as num?)?.toInt() ?? 0;
-          int fullBodyValue = (doc['full_body'] as num?)?.toInt() ?? 0;
+          int absValue = (doc['Abs'] as num?)?.toInt() ?? 0;
+          int lowerBodyValue = (doc['Lower body'] as num?)?.toInt() ?? 0;
+          int fullBodyValue = (doc['Full body'] as num?)?.toInt() ?? 0;
 
-          tempStats['abs'] = tempStats['abs']! + absValue;
-          tempStats['lower_body'] = tempStats['lower_body']! + lowerBodyValue;
-          tempStats['full_body'] = tempStats['full_body']! + fullBodyValue;
+          tempStats['Abs'] = tempStats['Abs']! + absValue;
+          tempStats['Lower body'] = tempStats['Lower body']! + lowerBodyValue;
+          tempStats['Full body'] = tempStats['Full body']! + fullBodyValue;
         }
       } catch (e) {
         print('Error parsing document: ${doc.id}, Error: $e');
@@ -86,20 +86,20 @@ class _ActivityPageState extends State<ActivityPage> {
     setState(() {
       stats = tempStats;
 
-      final double sumActivity = stats['abs']!.toDouble() + stats['lower_body']!.toDouble() + stats['full_body']!.toDouble();
+      final double sumActivity = stats['Abs']!.toDouble() + stats['Lower body']!.toDouble() + stats['Full body']!.toDouble();
       if (sumActivity > 0) {
-        absRounded = ((stats['abs']! / sumActivity) * 100).round();
-        lowerBodyRounded = ((stats['lower_body']! / sumActivity) * 100).round();
-        fullBodyRounded = ((stats['full_body']! / sumActivity) * 100).round();
+        absRounded = ((stats['Abs']! / sumActivity) * 100).round();
+        lowerBodyRounded = ((stats['Lower body']! / sumActivity) * 100).round();
+        fullBodyRounded = ((stats['Full body']! / sumActivity) * 100).round();
 
         // Корекція відсотків
         int total = absRounded + lowerBodyRounded + fullBodyRounded;
         if (total != 100) {
           final difference = 100 - total;
           if (difference > 0) {
-            if (stats['abs']! >= stats['lower_body']! && stats['abs']! >= stats['full_body']!) {
+            if (stats['Abs']! >= stats['Lower body']! && stats['Abs']! >= stats['Full body']!) {
               absRounded += difference;
-            } else if (stats['lower_body']! >= stats['full_body']!) {
+            } else if (stats['Lower body']! >= stats['Full body']!) {
               lowerBodyRounded += difference;
             } else {
               fullBodyRounded += difference;
@@ -167,9 +167,9 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   Widget _buildChart(Map<String, dynamic> data) {
-    final abs = data['abs'] ?? 0;
-    final lowerBody = data['lower_body'] ?? 0;
-    final fullBody = data['full_body'] ?? 0;
+    final abs = data['Abs'] ?? 0;
+    final lowerBody = data['Lower body'] ?? 0;
+    final fullBody = data['Full body'] ?? 0;
 
     final double sumActivity = abs.toDouble() + lowerBody.toDouble() + fullBody.toDouble();
 
@@ -278,9 +278,9 @@ class _ActivityPageState extends State<ActivityPage> {
             height: 200,
             width: 200,
             child: _buildChart({
-              'abs': stats['abs'],
-              'lower_body': stats['lower_body'],
-              'full_body': stats['full_body'],
+              'Abs': stats['Abs'],
+              'Lower body': stats['Lower body'],
+              'Full body': stats['Full body'],
             }),
           ),
           const SizedBox(height: 24),
@@ -325,11 +325,11 @@ class _ActivityPageState extends State<ActivityPage> {
                   ),
                 ),
                 const SizedBox(height: 12.0),
-                buildStatNumberRow('Abs', abs_color, stats['abs'] ?? 0),
+                buildStatNumberRow('Abs', abs_color, stats['Abs'] ?? 0),
                 const SizedBox(height: 4.0),
-                buildStatNumberRow('Lower body', lower_color, stats['lower_body'] ?? 0),
+                buildStatNumberRow('Lower body', lower_color, stats['Lower body'] ?? 0),
                 const SizedBox(height: 4.0),
-                buildStatNumberRow('Full body', full_color, stats['full_body'] ?? 0),
+                buildStatNumberRow('Full body', full_color, stats['Full body'] ?? 0),
               ],
             ),
           ),

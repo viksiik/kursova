@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'main.dart';
-import '../auth/pages/LoginPage.dart';
+import 'auth/pages/RegisterPage.dart';
 
 class welcomeScreen extends StatelessWidget {
   const welcomeScreen({super.key});
@@ -59,7 +58,7 @@ class welcomeScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => LoginPage(onTap: () {  },)),
+                        MaterialPageRoute(builder: (context) => RegisterPage(onTap: () {  },)),
                       );
                     },
                     child: const Text(

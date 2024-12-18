@@ -47,9 +47,8 @@ class _MainPageState extends State<MainPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const SizedBox(height: 32.0),
-           CurrentProgramWidget(),
-            const SizedBox(height: 12.0),
+            const SizedBox(height: 48.0),
+            CurrentProgramWidget(),
             ActivityChart(),
             const SizedBox(height: 4.0),
             const WaterBalanceWidget(),

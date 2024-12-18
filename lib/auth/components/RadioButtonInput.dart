@@ -28,6 +28,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
             ),
           ),
           leading: Radio<String>(
+            activeColor: const Color(0xFF8587F8),
             value: 'Male',
             groupValue: _selectedGender,
             onChanged: (String? value) {
@@ -54,6 +55,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
           ),
           leading: Radio<String>(
             value: 'Female',
+            activeColor: const Color(0xFF8587F8),
             groupValue: _selectedGender,
             onChanged: (String? value) {
               setState(() {
@@ -79,6 +81,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
           ),
           leading: Radio<String>(
             value: 'Other',
+            activeColor: const Color(0xFF8587F8),
             groupValue: _selectedGender,
             onChanged: (String? value) {
               setState(() {

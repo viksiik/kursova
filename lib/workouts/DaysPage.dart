@@ -33,7 +33,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     checkActiveProgram();
   }
 
-  // Функція для перевірки активного воркауту
+  // Перевірка, чи є активний воркаут
   void checkActiveProgram() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -44,12 +44,12 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
           .collection('users')
           .doc(user.uid)
           .collection('currentProgram')
-          .doc('active')
+          .doc(widget.workoutName)
           .get();
 
-      if (doc.exists) {
+      if (doc.exists && doc['isActive'] == true) {
         setState(() {
-          activeProgram = doc['programId'] ?? '';
+          activeProgram = doc['programId'] ?? ''; // Перевіряємо, чи є цей воркаут активним
           isProgramActive = activeProgram.isNotEmpty;
         });
       }
@@ -58,42 +58,94 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     }
   }
 
-  // Функція для запуску воркауту
   void startWorkout() async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) return;
 
-    if (isProgramActive) {
-      if (activeProgram == widget.workoutName) {
-        // Виводимо повідомлення, що воркаут вже активний
-        _showMessage("You are already doing this workout!");
-      } else {
-        // Якщо інший воркаут активний, показуємо повідомлення
-        _showMessage("You are already doing another workout!");
-      }
-    } else {
-      // Якщо воркаут не активний, призначаємо новий
-      try {
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('currentProgram')
-            .doc('active')
-            .set({
-          'programId': widget.workoutName,
-          'startDate': DateTime.now(),
-        });
+    try {
+      // Fetch user's active program
+      final currentProgramDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('currentProgram')
+          .where('isActive', isEqualTo: true)
+          .get();
 
-        setState(() {
-          isProgramActive = true;
-          activeProgram = widget.workoutName;
-        });
+      // If the user already has an active program
+      if (currentProgramDoc.docs.isNotEmpty) {
+        // Get the existing active program
+        final activeProgramData = currentProgramDoc.docs.first.data();
+        final activeProgramId = activeProgramData['programId'];
 
-        _showMessage("Workout started successfully!");
-      } catch (e) {
-        print('Error starting workout: $e');
+        // Check if the active program is the same as the one the user wants to start
+        if (activeProgramId == widget.workoutName) {
+          _showMessage("You are already doing this workout!");
+        } else {
+          _showMessage("You are already doing another workout!");
+        }
+        return;
       }
+
+      // Fetch the program document from the 'programs' collection
+      final programDoc = await _firestore
+          .collection('programs')
+          .doc(widget.workoutName)
+          .get();
+
+      if (!programDoc.exists) {
+        _showMessage("Program not found!");
+        return;
+      }
+
+      int totalDays = 28;
+
+      // Extract weeks and calculate total days
+      final duration = programDoc['duration'] ?? '';
+      final match = RegExp(r'(\d+)').firstMatch(duration);
+
+      if (match != null) {
+        final weeks = int.tryParse(match.group(0) ?? '0') ?? 0;
+        if (weeks > 0) {
+          totalDays = weeks * 7;
+        }
+      }
+
+      final programData = programDoc.data();
+      if (programData == null) {
+        _showMessage("No data available for this program.");
+        return;
+      }
+
+      // Add the program to the user's currentProgram collection
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('currentProgram')
+          .doc(widget.workoutName)
+          .set({
+        'programId': widget.workoutName,
+        'startDate': DateTime.now(),
+        'isActive': true, // Set the program as active
+        'category': programData['category'] ?? 'Unknown',
+        'difficulty': programData['difficulty'] ?? 'Unknown',
+        'duration': programData['duration'] ?? 'Unknown',
+        'totalDays': totalDays,
+        'doneDays': 0,
+        'imageUrl': programData['imageUrl'],
+        'year': programData['year']
+      });
+
+      // Update the local state
+      setState(() {
+        isProgramActive = true;
+        activeProgram = widget.workoutName;
+      });
+
+      _showMessage("Workout started successfully!");
+    } catch (e) {
+      print('Error starting workout: $e');
+      _showMessage("An error occurred while starting the workout.");
     }
   }
 
@@ -150,16 +202,15 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
           flexibleSpace: Container(
             margin: const EdgeInsets.only(top: 16.0),
             child: Center(
-              child: Text(widget.workoutName,
+              child: Text(
+                widget.workoutName,
                 style: const TextStyle(
                     fontFamily: 'Montserrat',
                     fontSize: 24.0,
-                    fontWeight: FontWeight.w500
-                ),
+                    fontWeight: FontWeight.w500),
               ),
             ),
-          )
-      ),
+          )),
       body: Column(
         children: [
           Container(
@@ -182,85 +233,9 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    boxShadow: [BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 2,
-                        blurRadius: 6,
-                        offset: Offset(0, 3))],
-                    color: Color(0xFFFBF4FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '$category',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontFamily: 'Montserrat',
-                    ),
-                  ),
-                ),
-                // Difficulty Container
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    boxShadow: [BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 2,
-                        blurRadius: 6,
-                        offset: Offset(0, 3))],
-                    color: Color(0xFFFBF4FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    ' ${difficulty.isNotEmpty ? difficulty[0].toUpperCase() + difficulty.substring(1).toLowerCase() : ''}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontFamily: 'Montserrat',
-                    ),
-                  ),
-                ),
-                // Duration Container
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    boxShadow: [BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 2,
-                        blurRadius: 6,
-                        offset: Offset(0, 3))],
-                    color: Color(0xFFFBF4FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '$duration',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontFamily: 'Montserrat',
-                    ),
-                  ),
-                ),
+                _buildProgramInfoContainer(category),
+                _buildProgramInfoContainer(difficulty),
+                _buildProgramInfoContainer(duration),
               ],
             ),
           ),
@@ -284,7 +259,8 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                 final day = _days[index];
                 final exercises = day['data'];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
                   color: Colors.purple.shade50,
                   child: ListTile(
                     title: Text(
@@ -315,7 +291,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
             ),
           ),
 
-          // Кнопка для старту воркауту
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton(
@@ -327,6 +302,38 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Віджет для відображення фільтрів (категорія, складність, тривалість)
+  Widget _buildProgramInfoContainer(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 6,
+              offset: Offset(0, 3))
+        ],
+        color: Color(0xFFFBF4FF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.black87,
+          fontFamily: 'Montserrat',
+        ),
       ),
     );
   }

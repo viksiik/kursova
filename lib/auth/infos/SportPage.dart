@@ -44,7 +44,7 @@ class _SportLevelPageState extends State<SportLevelPage> {
           children: [
             Image.asset(
               'assets/images/sport_img.png',
-              height: 240.0,
+              height: 200.0,
               fit: BoxFit.cover,
             ),
             const SizedBox(height: 8.0),

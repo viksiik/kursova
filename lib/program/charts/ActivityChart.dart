@@ -29,22 +29,22 @@ class ActivityChart extends StatelessWidget {
         .snapshots()
         .map((snapshot) {
       Map<String, int> activityCount = {
-        'abs': 0,
-        'lower_body': 0,
-        'full_body': 0,
+        'Abs': 0,
+        'Lower body': 0,
+        'Full body': 0,
       };
 
       for (var doc in snapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        if (data.containsKey('abs')) {
-          activityCount['abs'] = activityCount['abs']! + (data['abs'] as num).toInt();
+        if (data.containsKey('Abs')) {
+          activityCount['Abs'] = activityCount['Abs']! + (data['Abs'] as num).toInt();
         }
-        if (data.containsKey('lower_body')) {
-          activityCount['lower_body'] = activityCount['lower_body']! + (data['lower_body'] as num).toInt();
+        if (data.containsKey('Lower body')) {
+          activityCount['Lower body'] = activityCount['Lower body']! + (data['Lower body'] as num).toInt();
         }
-        if (data.containsKey('full_body')) {
-          activityCount['full_body'] = activityCount['full_body']! + (data['full_body'] as num).toInt();
+        if (data.containsKey('Full body')) {
+          activityCount['Full body'] = activityCount['Full body']! + (data['Full body'] as num).toInt();
         }
       }
 
@@ -76,9 +76,9 @@ class ActivityChart extends StatelessWidget {
 
   Widget _buildChart(Map<String, int> data) {
 
-    final abs = data['abs'] ?? 0;
-    final lowerBody = data['lower_body'] ?? 0;
-    final fullBody = data['full_body'] ?? 0;
+    final abs = data['Abs'] ?? 0;
+    final lowerBody = data['Lower body'] ?? 0;
+    final fullBody = data['Full body'] ?? 0;
 
     final double sumActivity = abs.toDouble() + lowerBody.toDouble() + fullBody.toDouble();
 
