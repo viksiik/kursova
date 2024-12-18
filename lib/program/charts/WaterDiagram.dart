@@ -20,18 +20,23 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
   late String userId;
   Map<DateTime, int> waterData = {};
   int todayWater = 0;
-  int goalWater = 2200; // Ціль для води
   double averageWater = 0.0;
+  late int goalWater = 0;
 
   @override
   void initState() {
     super.initState();
+    fetchWaterGoal();
     fetchWaterData();
   }
 
   void fetchWaterData() {
     final user = _auth.currentUser;
-    if (user == null) return;
+
+    if (user == null) {
+      print("No user is signed in!");
+      return;
+    }
 
     userId = user.uid; // ID користувача
     DateTime today = DateTime.now();
@@ -48,9 +53,8 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
 
       for (var doc in snapshot.docs) {
         try {
-          DateTime date = DateTime.parse(doc.id); // Парсимо ID як дату
+          DateTime date = DateTime.parse(doc.id);
           int waterAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
-
           tempData[date] = waterAmount;
 
           // Сьогоднішня кількість
@@ -62,16 +66,44 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
 
           sum += waterAmount;
           count++;
+
         } catch (e) {
           print("Error parsing document: $e");
         }
       }
-
       setState(() {
         waterData = tempData;
         averageWater = count > 0 ? sum / count : 0;
+
       });
     });
+  }
+
+  Future<void> fetchWaterGoal() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    userId = user.uid; // ID користувача
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        print('Fetched data: $data');
+        setState(() {
+          goalWater = (data['waterGoal'] as num?)?.toInt() ?? 0;
+        });
+      } else {
+        print('No document found for user $userId');
+      }
+
+    } catch (error) {
+      print('Error fetching data: $error');
+    }
   }
 
   List<FlSpot> _generateChartData() {
@@ -269,7 +301,8 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
             ),
           ),
         ),
-      )
+      ),
+          Text('Goal: $goalWater ml')
 
       ],
       ),

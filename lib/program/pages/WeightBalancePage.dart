@@ -19,6 +19,8 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
   String selectedFilter = 'week';
   Map<String, double> stats = {'amount': 0};
   final currentUser = FirebaseAuth.instance.currentUser;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late String userId;
 
   Color absColor = Color(0xFFFFDC66);
   Color fullColor = Color(0xFF8587F8);
@@ -26,13 +28,41 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
 
   Map<DateTime, double> weightData = {}; // Changed from int to double for weight
   double todayWeight = 0.0;
-  double goalWeight = 60.0;
+  double goalWeight = 0.0;
   double averageWeight = 0.0;
 
   @override
   void initState() {
     super.initState();
     fetchActivityData();
+    fetchWeightGoal();
+  }
+
+  Future<void> fetchWeightGoal() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    userId = user.uid; // ID користувача
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        print('Fetched data: $data');
+        setState(() {
+          goalWeight = (data['weightGoal'] as num?)?.toDouble() ?? 0;
+        });
+      } else {
+        print('No document found for user $userId');
+      }
+
+    } catch (error) {
+      print('Error fetching data: $error');
+    }
   }
 
   void fetchActivityData() async {
@@ -113,6 +143,79 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
     });
   }
 
+  // Add the function to add weight data for today
+  Future<void> addWeightData(double weight) async {
+    final today = DateTime.now();
+    final weightRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser?.uid)
+        .collection('weight_balance')
+        .doc(today.toIso8601String()); // Use today's date as document ID
+
+    // Check if there's already data for today
+    final docSnapshot = await weightRef.get();
+
+    if (docSnapshot.exists) {
+      print("Data already exists for today, not adding new entry.");
+      return;
+    }
+
+    // If no data for today, add the new weight entry
+    await weightRef.set({
+      'amount': weight,
+      'date': today,
+    });
+
+    print("Weight data added for today: $weight");
+    fetchActivityData(); // Refresh the data
+  }
+
+  // Show a dialog to input weight
+  void _showWeightInputDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        double weightInput = 0.0;
+        return AlertDialog(
+          title: Text("Enter Weight", style: TextStyle(fontFamily: 'Montserrat',),),
+          content: TextField(
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              weightInput = double.tryParse(value) ?? 0.0;
+            },
+            decoration: InputDecoration(
+                hintText: "Enter your weight",
+              hintStyle: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 14.0,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Cancel", style: TextStyle(fontFamily: 'Montserrat',),),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (weightInput > 0) {
+                  await addWeightData(weightInput);
+                  Navigator.of(context).pop();
+                } else {
+                  print("Invalid weight input");
+                }
+              },
+              child: const Text("Add", style: TextStyle(fontFamily: 'Montserrat',),),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget buildFilterButton(String filterName) {
     return GestureDetector(
       onTap: () {
@@ -132,7 +235,6 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
             color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
             width: 1, // Товщина обведення
           ),
-
           boxShadow: selectedFilter == filterName
               ? [
             BoxShadow(
@@ -143,10 +245,10 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
             ),
           ]
               : [BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 6,
-            offset: Offset(0, 3)
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 6,
+              offset: Offset(0, 3)
           ),],
         ),
         child: Text(
@@ -166,7 +268,6 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
   }
 
   double _calculateMaxY() {
-
     double maxDataValue = weightData.isNotEmpty
         ? weightData.values.reduce((a, b) => a > b ? a : b)
         : 0;
@@ -188,7 +289,6 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
       return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
     });
   }
-
 
   Widget _buildChart(Map<String, dynamic> data) {
     return Container(
@@ -214,8 +314,8 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
                         return Text(
                           "${value.toStringAsFixed(1)} kg",
                           style: const TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'Montserrat',
+                            fontSize: 10,
+                            fontFamily: 'Montserrat',
                           ),
                         );
                       },
@@ -354,6 +454,30 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
     return months[month - 1];
   }
 
+  Widget _buildAddWeightButton() {
+    return Center(  // Додаємо обгортку для вирівнювання по центру
+      child: ElevatedButton(
+        onPressed: _showWeightInputDialog,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF8587F8), // Вибір кольору кнопки
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+          textStyle: const TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        child: const Text("Add Weight",
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -391,6 +515,9 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
               ),
               SizedBox(height: 16),
               _buildChart(stats),
+
+              const SizedBox(height: 20),
+              _buildAddWeightButton(),
             ],
           ),
         ),

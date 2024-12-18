@@ -22,7 +22,8 @@ class InputField extends StatelessWidget {
         obscureText: obscureText,
         keyboardType: TextInputType.text,
         decoration: InputDecoration(
-        enabledBorder: OutlineInputBorder(
+            labelText: hintText,
+            enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.0),
           borderSide: const BorderSide(color: Colors.white),
         ),

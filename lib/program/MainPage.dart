@@ -4,6 +4,7 @@ import '../BottomBar.dart'; // Ваш кастомний BottomNavBar
 import '../profile/ProfilePage.dart';
 import '../workouts/WorkoutPage.dart';
 import 'charts/ActivityChart.dart';
+import 'charts/CurrentWoWidget.dart';
 import 'charts/MoodChart.dart';
 import 'charts/WaterDiagram.dart';
 
@@ -47,13 +48,14 @@ class _MainPageState extends State<MainPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const SizedBox(height: 32.0),
+           CurrentProgramWidget(),
+            const SizedBox(height: 12.0),
             ActivityChart(),
             const SizedBox(height: 4.0),
             const WaterBalanceWidget(),
             const SizedBox(height: 12.0),
             const WeightBalanceWidget(),
             MoodTracker(),
-            //BottomNav()
           ],
         ),
       ),

@@ -285,7 +285,7 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
               children: [
                 // Пошукове поле
                 Container(
-                  width: 280,
+                  width: 250,
                   height: 36,
                   child: TextField(
                     decoration: InputDecoration(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WeightLossProgram extends StatefulWidget {
   final String workoutName;
@@ -21,16 +22,89 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
   String category = "";
   String difficulty = "";
   String duration = "";
-  List<Map<String, dynamic>> programsList = [];
-  List<Map<String, dynamic>> originalProgramsList = [];
+  String activeProgram = ''; // Змінна для зберігання активного воркауту
+  bool isProgramActive = false;
 
   @override
   void initState() {
     super.initState();
     fetchProgramDetails();
     fetchProgramDays();
+    checkActiveProgram();
   }
 
+  // Функція для перевірки активного воркауту
+  void checkActiveProgram() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('currentProgram')
+          .doc('active')
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          activeProgram = doc['programId'] ?? '';
+          isProgramActive = activeProgram.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      print('Error checking active program: $e');
+    }
+  }
+
+  // Функція для запуску воркауту
+  void startWorkout() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    if (isProgramActive) {
+      if (activeProgram == widget.workoutName) {
+        // Виводимо повідомлення, що воркаут вже активний
+        _showMessage("You are already doing this workout!");
+      } else {
+        // Якщо інший воркаут активний, показуємо повідомлення
+        _showMessage("You are already doing another workout!");
+      }
+    } else {
+      // Якщо воркаут не активний, призначаємо новий
+      try {
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('currentProgram')
+            .doc('active')
+            .set({
+          'programId': widget.workoutName,
+          'startDate': DateTime.now(),
+        });
+
+        setState(() {
+          isProgramActive = true;
+          activeProgram = widget.workoutName;
+        });
+
+        _showMessage("Workout started successfully!");
+      } catch (e) {
+        print('Error starting workout: $e');
+      }
+    }
+  }
+
+  // Функція для показу повідомлення
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  // Отримання деталей програми
   void fetchProgramDetails() {
     _firestore
         .collection('programs')
@@ -49,6 +123,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     });
   }
 
+  // Отримання днів програми
   void fetchProgramDays() {
     _firestore
         .collection('programs')
@@ -87,21 +162,19 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
       ),
       body: Column(
         children: [
-
           Container(
             width: 360,
             height: 190,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),
-              color: Colors.black.withOpacity(0.3), // Optional, adds background color
+              color: Colors.black.withOpacity(0.3),
             ),
-            clipBehavior: Clip.hardEdge, // Ensures the image clips to the rounded corners
+            clipBehavior: Clip.hardEdge,
             child: Image.asset(
               widget.workoutUrl,
               fit: BoxFit.cover,
             ),
           ),
-
 
           // Filters Section (Category, Difficulty, Duration)
           Container(
@@ -122,7 +195,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: Colors.grey.withOpacity(0.2),
-                      width: 1, // Товщина обведення
+                      width: 1,
                     ),
                   ),
                   child: Text(
@@ -149,7 +222,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: Colors.grey.withOpacity(0.2),
-                      width: 1, // Товщина обведення
+                      width: 1,
                     ),
                   ),
                   child: Text(
@@ -159,7 +232,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                       fontSize: 14,
                       color: Colors.black87,
                       fontFamily: 'Montserrat',
-
                     ),
                   ),
                 ),
@@ -168,16 +240,16 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     boxShadow: [BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 6,
-                      offset: Offset(0, 3))],
-                      color: Color(0xFFFBF4FF),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
                         color: Colors.grey.withOpacity(0.2),
-                        width: 1, // Товщина обведення
-                      ),
+                        spreadRadius: 2,
+                        blurRadius: 6,
+                        offset: Offset(0, 3))],
+                    color: Color(0xFFFBF4FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     '$duration',
@@ -186,7 +258,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                       fontSize: 14,
                       color: Colors.black87,
                       fontFamily: 'Montserrat',
-
                     ),
                   ),
                 ),
@@ -242,8 +313,19 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
                 );
               },
             ),
-          )
+          ),
 
+          // Кнопка для старту воркауту
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: startWorkout,
+              child: Text(
+                isProgramActive ? "Resume Workout" : "Start Workout",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
         ],
       ),
     );

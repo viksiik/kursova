@@ -22,13 +22,14 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
   late String userId;
   Map<DateTime, double> weightData = {}; // Changed from int to double for weight
   double todayWeight = 0.0;
-  double goalWeight = 60.0; // Default goal for weight
+  double goalWeight = 0.0; // Default goal for weight
   double averageWeight = 0.0;
 
   @override
   void initState() {
     super.initState();
     fetchWeightData();
+    fetchWeightGoal();
   }
 
   void fetchWeightData() {
@@ -125,6 +126,33 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
         ? weightData.values.reduce((a, b) => a > b ? a : b).toDouble()
         : 0;
     return max(maxDataValue, goalWeight.toDouble()) + 5; // Increased the buffer for weight
+  }
+
+  Future<void> fetchWeightGoal() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    userId = user.uid; // ID користувача
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        print('Fetched data: $data');
+        setState(() {
+          goalWeight = (data['weightGoal'] as num?)?.toDouble() ?? 0;
+        });
+      } else {
+        print('No document found for user $userId');
+      }
+
+    } catch (error) {
+      print('Error fetching data: $error');
+    }
   }
 
   @override

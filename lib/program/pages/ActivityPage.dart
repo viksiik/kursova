@@ -295,7 +295,45 @@ class _ActivityPageState extends State<ActivityPage> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
+
+          Container(
+            margin: const EdgeInsets.only(left: 32.0, right: 32.0, bottom: 12.0),
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+
+            decoration: BoxDecoration(
+              color: Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(16.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 1,
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Statistics',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12.0),
+                buildStatNumberRow('Abs', abs_color, stats['abs'] ?? 0),
+                const SizedBox(height: 4.0),
+                buildStatNumberRow('Lower body', lower_color, stats['lower_body'] ?? 0),
+                const SizedBox(height: 4.0),
+                buildStatNumberRow('Full body', full_color, stats['full_body'] ?? 0),
+              ],
+            ),
+          ),
+
         ],
       ),
     );
@@ -323,6 +361,32 @@ class _ActivityPageState extends State<ActivityPage> {
               fontSize: 16.0
               )
           ) ,
+        ],
+      ),
+    );
+  }
+
+  Widget buildStatNumberRow(String label, Color color, int value) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 64.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 12),
+              Text(label,
+                  style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          Text('$value ex.',
+              style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );

@@ -67,6 +67,86 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     });
   }
 
+  // Функція для додавання настрою
+  Future<void> _addMood() async {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final String userId = user.uid;
+    String selectedMood = '';
+
+    // Показуємо діалогове вікно для вибору настрою
+    await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select your mood'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: moodColors.keys.map((mood) {
+                return ListTile(
+                  title: Text(mood),
+                  leading: CircleAvatar(
+                    backgroundColor: moodColors[mood],
+                  ),
+                  onTap: () {
+                    selectedMood = mood;
+                    Navigator.of(context).pop(mood); // Закриваємо діалог та передаємо вибір
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    ).then((value) {
+      if (value != null) {
+        // Отримуємо поточну дату
+        final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+        // Додаємо вибраний настрій в Firestore
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('mood')
+            .doc(todayDate)
+            .set({
+          'mood': selectedMood,
+        }).then((_) {
+          print("Mood added successfully!");
+          _fetchMoodData(); // Оновлюємо дані після додавання
+        }).catchError((error) {
+          print("Error adding mood: $error");
+        });
+      }
+    });
+  }
+
+  Widget _buildAddMoodButton() {
+    return Center(  // Додаємо обгортку для вирівнювання по центру
+      child: ElevatedButton(
+        onPressed: _addMood,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF8587F8),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+          textStyle: const TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        child: const Text('Add Mood',
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedYear = int.parse(selectedMonth.split('-')[0]);
@@ -156,7 +236,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                   ))
                       .toList(),
                 ),
-                const SizedBox(height: 16,),
+                const SizedBox(height: 16, ),
                 Container(
                   height: 350,
                   child: GridView.builder(
@@ -214,6 +294,9 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     },
                   ),
                 ),
+                SizedBox(height: 20),
+                // Кнопка для додавання настрою
+                _buildAddMoodButton(),
               ],
             ),
           ],

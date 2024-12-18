@@ -228,7 +228,7 @@ class _MoodTrackerState extends State<MoodTracker> {
                     children: [
                       Wrap(
                         alignment: WrapAlignment.center,
-                        spacing: 16.0,
+                        spacing: 12.0,
                         runSpacing: 12.0,
                         children: moodColors.entries.map((entry) {
                           return Column(

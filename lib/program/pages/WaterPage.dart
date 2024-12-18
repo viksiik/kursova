@@ -19,6 +19,8 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
   String selectedFilter = 'week';
   Map<String, int> stats = {'amount': 0};
   final currentUser = FirebaseAuth.instance.currentUser;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late String userId;
 
   Color absColor = Color(0xFFFFDC66);
   Color fullColor = Color(0xFF8587F8);
@@ -26,13 +28,41 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
   Map<DateTime, int> waterData = {}; // Changed from double to int for water
   int todayWater = 0;
-  int goalWater = 2100;
+  int goalWater = 0;
   int averageWater = 0;
 
   @override
   void initState() {
     super.initState();
     fetchActivityData();
+    fetchWaterGoal();
+  }
+
+  Future<void> fetchWaterGoal() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    userId = user.uid; // ID користувача
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        print('Fetched data: $data');
+        setState(() {
+          goalWater = (data['waterGoal'] as num?)?.toInt() ?? 0;
+        });
+      } else {
+        print('No document found for user $userId');
+      }
+
+    } catch (error) {
+      print('Error fetching data: $error');
+    }
   }
 
   void fetchActivityData() async {
@@ -112,6 +142,102 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     });
   }
 
+  Future<void> addWaterAmount(int waterAmount) async {
+    DateTime now = DateTime.now();
+    String dateString = now.toIso8601String().substring(0, 10); // Отримуємо лише дату без часу
+
+    try {
+      DocumentReference docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser?.uid)
+          .collection('water_balance')
+          .doc(dateString); // Використовуємо дату як ID документа
+
+      DocumentSnapshot doc = await docRef.get();
+
+      if (doc.exists) {
+        // Якщо документ існує, оновлюємо кількість води
+        int existingAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
+        await docRef.update({'amount': existingAmount + waterAmount});
+      } else {
+        await docRef.set({'amount': waterAmount});
+      }
+      fetchActivityData(); // Оновлюємо дані після додавання
+    } catch (e) {
+      print("Error adding water amount: $e");
+    }
+  }
+
+  void _showAddWaterDialog() {
+    TextEditingController controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Enter the amount of water",
+          style: TextStyle(fontFamily: 'Montserrat',),),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              hintText: "Enter amount in ml",
+              hintStyle: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 14.0,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Cancel", style: TextStyle(fontFamily: 'Montserrat',),),
+            ),
+            TextButton(
+              onPressed: () {
+                int waterAmount = int.tryParse(controller.text) ?? 0;
+                if (waterAmount > 0) {
+                  addWaterAmount(waterAmount);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text("Add", style: TextStyle(fontFamily: 'Montserrat',),),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAddWaterButton() {
+    return Center(  // Додаємо обгортку для вирівнювання по центру
+      child: ElevatedButton(
+        onPressed: _showAddWaterDialog,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF8587F8), // Вибір кольору кнопки
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+          textStyle: const TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        child: const Text("Add Water",
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),),
+      ),
+    );
+  }
+
+
   Widget buildFilterButton(String filterName) {
     return GestureDetector(
       onTap: () {
@@ -120,77 +246,50 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
         });
         fetchActivityData();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selectedFilter == filterName
-              ? Color(0xFF8587F8) // Фіолетове підсвічування при виборі
-              : Color(0xFFFBF4FF),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
-            width: 1, // Товщина обведення
-          ),
-
-          boxShadow: selectedFilter == filterName
-              ? [
-            BoxShadow(
-              color: Color(0xFF8587F8).withOpacity(0.4),
-              spreadRadius: 2,
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            ),
-          ]
-              : [BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 6,
-              offset: Offset(0, 3)
-          ),],
-        ),
-        child: Text(
-          filterName,
-          style: TextStyle(
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
             color: selectedFilter == filterName
-                ? Color(0xFFFBF4FF)
-                : Colors.black,
-            fontWeight:
-            selectedFilter == filterName ? FontWeight.w600 : FontWeight.normal,
-            fontFamily: 'Montserrat',
-            fontSize: 12.0,
+                ? Color(0xFF8587F8) // Фіолетове підсвічування при виборі
+                : Color(0xFFFBF4FF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
+              width: 1, // Товщина обведення
+            ),
+
+            boxShadow: selectedFilter == filterName
+                ? [
+              BoxShadow(
+                color: Color(0xFF8587F8).withOpacity(0.4),
+                spreadRadius: 2,
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ]
+                : [BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 2,
+                blurRadius: 6,
+                offset: Offset(0, 3)
+            ),],
+          ),
+          child: Text(
+            filterName,
+            style: TextStyle(
+              color: selectedFilter == filterName
+                  ? Color(0xFFFBF4FF)
+                  : Colors.black,
+              fontWeight:
+              selectedFilter == filterName ? FontWeight.w600 : FontWeight.normal,
+              fontFamily: 'Montserrat',
+              fontSize: 12.0,
+            ),
           ),
         ),
       ),
     );
-  }
-
-  double _calculateMaxY() {
-    if (waterData.isEmpty) {
-      return 2500; // Повертає стандартне значення, якщо немає даних
-    }
-
-    int maxDataValue = waterData.values
-        .where((value) => value != null) // Фільтруємо null значення
-        .fold(0, (prev, value) => max(prev, value)); // Знаходимо максимум
-
-    // Округлення вгору до найближчого кратного 5
-    double roundedValue = (max(maxDataValue, 2100) + 400) / 5; // Додаємо 4 для округлення
-    roundedValue = roundedValue.ceil() * 5;
-
-    return roundedValue;
-  }
-
-
-  List<FlSpot> _generateChartDataForLastDays(int days) {
-    List<DateTime> sortedDates = waterData.keys.toList()..sort();
-    final int startIndex = sortedDates.length > days
-        ? sortedDates.length - days
-        : 0;
-
-    return List.generate(sortedDates.length - startIndex, (index) {
-      DateTime date = sortedDates[index];
-      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0.0);  // Double for chart
-    });
   }
 
   Widget _buildChart(Map<String, dynamic> data) {
@@ -350,6 +449,35 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     );
   }
 
+  double _calculateMaxY() {
+    if (waterData.isEmpty) {
+      return 2500; // Повертає стандартне значення, якщо немає даних
+    }
+
+    int maxDataValue = waterData.values
+        .where((value) => value != null) // Фільтруємо null значення
+        .fold(0, (prev, value) => max(prev, value)); // Знаходимо максимум
+
+    // Округлення вгору до найближчого кратного 5
+    double roundedValue = (max(maxDataValue, 2100) + 400) / 5; // Додаємо 4 для округлення
+    roundedValue = roundedValue.ceil() * 5;
+
+    return roundedValue;
+  }
+
+
+  List<FlSpot> _generateChartDataForLastDays(int days) {
+    List<DateTime> sortedDates = waterData.keys.toList()..sort();
+    final int startIndex = sortedDates.length > days
+        ? sortedDates.length - days
+        : 0;
+
+    return List.generate(sortedDates.length - startIndex, (index) {
+      DateTime date = sortedDates[index];
+      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0.0);  // Double for chart
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -388,6 +516,9 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
               const SizedBox(height: 20),
               _buildChart(stats),
+
+              const SizedBox(height: 20),
+              _buildAddWaterButton(),
             ],
           ),
         ),

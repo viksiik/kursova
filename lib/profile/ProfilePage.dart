@@ -1,39 +1,32 @@
 import 'dart:io';
-
+import 'dart:convert'; // Для роботи з Base64
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:kurs/auth/components/ButtonField.dart';
+import 'package:kurs/auth/components/InputField.dart';
 
 import '../BottomBar.dart';
-import '../auth/components/AddData.dart';
+import '../auth/components/DialogMessage.dart';
 import '../program/MainPage.dart';
 import '../workouts/WorkoutPage.dart';
+import 'LogoutButton.dart';
 
 class UserProfilePage extends StatefulWidget {
-  //final String userId; // The user's ID (passed to the page)
-
-  //UserProfilePage({required this.userId});
-
   @override
   _UserProfilePageState createState() => _UserProfilePageState();
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final ImagePicker _picker = ImagePicker();
-  String _username = '';
-  String _avatarUrl = '';
-  File? _imageFile;
   bool _isLoading = false;
   int _currentIndex = 2;
   final currentUser = FirebaseAuth.instance.currentUser;
 
-
-  // TextEditingController for the username input
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _waterGoalController = TextEditingController();
+  final TextEditingController _weightGoalController = TextEditingController();
 
   @override
   void initState() {
@@ -41,27 +34,27 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _loadUserData();
   }
 
-  // Fetch user data from Firestore
+  // Завантажити дані користувача
   void _loadUserData() async {
-
     if (currentUser == null) {
       print("No authenticated user found.");
-      return ;
+      return;
     }
-    String? userId = currentUser?.uid;
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot userDoc =
+      await _firestore.collection('users').doc(currentUser?.uid).get();
 
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
         setState(() {
-          _username = userData['username'] ?? 'No username';
-          _avatarUrl = userData['avatarUrl'] ?? '';
-          _usernameController.text = _username;
+          _usernameController.text = userData['username'] ?? 'No username';
+          _waterGoalController.text = userData['waterGoal']?.toString() ?? '';
+          _weightGoalController.text = userData['weightGoal']?.toString() ?? '';
         });
       }
     } catch (e) {
@@ -73,35 +66,36 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  // Pick a new avatar image
-  Future<void> _pickAvatarImage() async {
+  Future<void> _updateUserProfile() async {
+    if (currentUser == null) return;
 
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
-
-  // Upload avatar image to Firebase Storage
-  Future<String?> _uploadAvatarImage() async {
-    String? userId = currentUser?.uid;
-    if (_imageFile == null) return null;
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      String fileName = '${userId}_avatar.jpg';
-      Reference storageRef = _storage.ref().child('avatars/$fileName');
+      // Вивести дані перед оновленням
+      print("Updating user data:");
+      print("Username: ${_usernameController.text}");
+      print("WaterGoal: ${_waterGoalController.text}");
+      print("WeightGoal: ${_weightGoalController.text}");
 
-      UploadTask uploadTask = storageRef.putFile(_imageFile!);
-      TaskSnapshot snapshot = await uploadTask;
+      await _firestore.collection('users').doc(currentUser?.uid).update({
+        'username': _usernameController.text,
+        'waterGoal': int.tryParse(_waterGoalController.text) ?? 0,
+        'weightGoal': double.tryParse(_weightGoalController.text) ?? 0.0,
+      });
 
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      ErrorDialog.show(context, 'Successfully updated info.', 'Success');
     } catch (e) {
-      print('Error uploading avatar image: $e');
-      return null;
+      print('Error updating profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -123,42 +117,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  Future<void> _updateUserProfile() async {
-    setState(() {
-      _isLoading = true;
-    });
-    String? userId = currentUser?.uid;
+  Future<void> signOut() async {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
     try {
-      String? newAvatarUrl = await _uploadAvatarImage();
-
-      await _firestore.collection('users').doc(userId).update({
-        'username': _usernameController.text,
-        if (newAvatarUrl != null) 'avatarUrl': newAvatarUrl,
-      });
-
-      setState(() {
-        _username = _usernameController.text;
-        if (newAvatarUrl != null) _avatarUrl = newAvatarUrl;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Profile updated successfully')));
+      await _auth.signOut();
+      print('User logged out successfully');
     } catch (e) {
-      print('Error updating profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating profile')));
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      print('Error during logout: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('User Profile'),
-        backgroundColor: Colors.purple.shade100,
-      ),
+      backgroundColor: const Color(0xFFF6EFFF),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
@@ -166,38 +138,41 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Avatar Image
-              GestureDetector(
-                onTap: _pickAvatarImage,
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundImage: _imageFile != null
-                      ? FileImage(_imageFile!)
-                      : _avatarUrl.isNotEmpty
-                      ? NetworkImage(_avatarUrl) as ImageProvider
-                      : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+              const SizedBox(height: 48.0),
+              const Text(
+                'User Profile',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  fontFamily: 'Montserrat',
                 ),
               ),
-              SizedBox(height: 20),
-
-              // Username Input Field
-              TextField(
+              SizedBox(height: 4),
+              // Поле для вводу імені користувача
+              InputField(
                 controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'Username',
+                obscureText: false,
+              ),
+
+              SizedBox(height: 4),
+
+              InputField(
+                controller: _waterGoalController,
+                hintText: 'Water Goal (ml)',
+                obscureText: false,
+              ),
+              SizedBox(height: 4),
+              // Поле для цілі ваги
+              InputField(
+                controller: _weightGoalController,
+                hintText: 'Weight Goal (kg)',
+                obscureText: false,
               ),
               SizedBox(height: 20),
-
-              // Save Button
-              ElevatedButton(
-                onPressed: _updateUserProfile,
-                child: Text('Save Profile'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade300,
-                ),
-              ),
+              ButtonField(onTap: _updateUserProfile, buttonText: 'Save Profile'),
+              LogoutButton()
             ],
           ),
         ),

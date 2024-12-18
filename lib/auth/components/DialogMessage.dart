@@ -12,9 +12,10 @@ class ErrorDialog {
               fontSize: 24.0,
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w400,
-              color: Colors.red,
+              color: typeMessage.toLowerCase() == 'success' ? Colors.green : Colors.red,
             ),
           ),
+
           content: Text(
             errorMessage,
             style: TextStyle(
