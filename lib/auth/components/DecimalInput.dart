@@ -49,16 +49,18 @@ class DecimalInput extends StatelessWidget {
 }
 
 class DecimalInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue,
-      TextEditingValue newValue,
-      ) {
-    final RegExp regExp = RegExp(r'^\d*(\.\d{0,1})?$');
+@override
+TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+    ) {
 
-    if (regExp.hasMatch(newValue.text)) {
-      return newValue;
-    }
-    return oldValue;
+  final RegExp regExp = RegExp(r'^([1-9]\d{0,2}|0)?(?:\.\d?)?$');
+
+  if (regExp.hasMatch(newValue.text)) {
+    return newValue;
   }
+  return oldValue;
 }
+}
+

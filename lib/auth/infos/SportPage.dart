@@ -85,18 +85,21 @@ class _SportLevelPageState extends State<SportLevelPage> {
                       {"SportLevel": _selectedLevel},
                     );
 
-                    Navigator.push(
+                    Navigator.pushAndRemoveUntil(
                       context,
                       PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) => const MainPage(),
                         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          // Тут ми застосовуємо FadeTransition
                           return FadeTransition(
                             opacity: animation,
                             child: child,
                           );
                         },
                       ),
+                          (route) => false, // Очищає стек, не дозволяючи повертатися назад
                     );
+
                   } else {
                     ErrorDialog.show(context, 'Please select a sport level.', 'Error');
                   }

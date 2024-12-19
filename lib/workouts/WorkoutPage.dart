@@ -6,7 +6,6 @@ import '../profile/ProfilePage.dart';
 import '../program/MainPage.dart';
 import 'DaysPage.dart';
 import 'components/ProgramCard.dart';
-import 'filters/SeacrchPage.dart';
 
 class MainWorkoutPage extends StatefulWidget {
   const MainWorkoutPage({super.key});
@@ -104,48 +103,86 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
   void _showSortMenu() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Text(
+                'Sort Programs',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Montserrat'
+                ),
+              ),
               ListTile(
-                title: const Text('Sort by Year (Ascending)'),
+                title: const Text('Sort by Year (Ascending)', style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Montserrat'
+                ),),
                 onTap: () {
                   sortProgramsBy('year', 'asc');
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: const Text('Sort by Year (Descending)'),
+                title: const Text('Sort by Year (Descending)', style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Montserrat'
+                ),),
                 onTap: () {
                   sortProgramsBy('year', 'desc');
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: const Text('Sort by Title (Ascending)'),
+                title: const Text('Sort by Title (Ascending)', style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Montserrat'
+                ),),
                 onTap: () {
                   sortProgramsBy('title', 'asc');
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: const Text('Sort by Title (Descending)'),
+                title: const Text('Sort by Title (Descending)', style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Montserrat'
+                ),),
                 onTap: () {
                   sortProgramsBy('title', 'desc');
                   Navigator.pop(context);
                 },
               ),
-              // Додаємо кнопку для скидання сортування
-              ListTile(
-                title: const Text('Reset Sorting'),
-                onTap: () {
-                  resetSort(); // Скидаємо сортування
-                  Navigator.pop(context);
-                },
+              Container(
+                child: Center(  // Center widget ensures the button is centered
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      resetSort();
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.clear, color: Colors.red),
+                    label: const Text(
+                      'Reset Sorting',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                  ),
+                ),
               ),
+
             ],
           ),
         );
@@ -156,6 +193,7 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
   void _showFilterMenu() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -163,12 +201,14 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Filter Programs',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Montserrat'
+              Center(
+                child: const Text(
+                  'Filter Programs',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Montserrat'
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -183,7 +223,9 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                 spacing: 8.0,
                 children: ['abs', 'full body', 'lower body']
                     .map((category) => ChoiceChip(
-                  label: Text(category),
+                  label: Text(category, style: TextStyle(
+                    fontFamily: 'Montserrat',
+                  ),),
                   selected: selectedCategory == category,
                   onSelected: (isSelected) {
                     setState(() {
@@ -191,9 +233,15 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                     });
                     applyFilters();
                   },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                  ),
+                  selectedColor: Color(0xFF8587F8), // Adjust color for selected chip
+                  backgroundColor: Colors.white38, // Adjust color for unselected chip
                 ))
                     .toList(),
               ),
+
               const SizedBox(height: 10),
               const Text('Difficulty:',
                 style: TextStyle(
@@ -206,26 +254,44 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                 spacing: 8.0,
                 children: ['beginner', 'intermediate', 'advanced']
                     .map((difficulty) => ChoiceChip(
-                  label: Text(difficulty),
-                  selected: selectedDifficulty == difficulty,
+                  label: Text(difficulty, style: TextStyle(
+                    fontFamily: 'Montserrat',
+                  ),),
+                  selected: selectedCategory == difficulty,
                   onSelected: (isSelected) {
                     setState(() {
-                      selectedDifficulty =
-                      isSelected ? difficulty : null;
+                      selectedCategory = isSelected ? difficulty : null;
                     });
                     applyFilters();
                   },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                  ),
+                  selectedColor: Color(0xFF8587F8), // Adjust color for selected chip
+                  backgroundColor: Colors.white38, // Adjust color for unselected chip
                 ))
                     .toList(),
               ),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  resetFilters();
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.clear),
-                label: const Text('Reset Filters'),
+              Container(
+                child: Center(  // Center widget ensures the button is centered
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      resetFilters();
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.clear, color: Colors.red),
+                    label: const Text(
+                      'Reset Filters',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

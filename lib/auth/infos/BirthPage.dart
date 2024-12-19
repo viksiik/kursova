@@ -50,7 +50,7 @@ class _BirthdayPageState extends State<BirthdayPage> {
           child: Indicator(currentValue: 3),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[

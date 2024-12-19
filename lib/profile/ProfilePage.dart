@@ -12,6 +12,8 @@ import '../program/MainPage.dart';
 import '../workouts/WorkoutPage.dart';
 import 'LogoutButton.dart';
 
+import 'package:flutter/services.dart';
+
 class UserProfilePage extends StatefulWidget {
   @override
   _UserProfilePageState createState() => _UserProfilePageState();
@@ -22,11 +24,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
   bool _isLoading = false;
   int _currentIndex = 2;
   final currentUser = FirebaseAuth.instance.currentUser;
-
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _waterGoalController = TextEditingController();
   final TextEditingController _weightGoalController = TextEditingController();
+
+  String _username = '';
+  String _waterGoal = '';
+  String _weightGoal = '';
+  String _startWeight = '';
+  String _height = '';
+  String _dob = '';
+  String _fitnessLevel = '';
 
   @override
   void initState() {
@@ -34,7 +42,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _loadUserData();
   }
 
-  // Завантажити дані користувача
+  // Завантаження даних користувача з Firestore
   void _loadUserData() async {
     if (currentUser == null) {
       print("No authenticated user found.");
@@ -52,6 +60,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
         setState(() {
+          _username = userData['username'] ?? 'No username';
+          _waterGoal = userData['waterGoal']?.toString() ?? '';
+          _weightGoal = userData['weightGoal']?.toString() ?? '';
+          _startWeight = userData['Weight']?.toString() ?? '';
+          _height = userData['Height']?.toString() ?? '';
+          _dob = userData['Birthday'] != null
+              ? DateTime.parse(userData['Birthday']).toString().split(' ')[0]  // Directly parse string to DateTime
+              : '';
+          _fitnessLevel = userData['SportLevel'] ?? '';
+
           _usernameController.text = userData['username'] ?? 'No username';
           _waterGoalController.text = userData['waterGoal']?.toString() ?? '';
           _weightGoalController.text = userData['weightGoal']?.toString() ?? '';
@@ -74,12 +92,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
 
     try {
-      // Вивести дані перед оновленням
-      print("Updating user data:");
-      print("Username: ${_usernameController.text}");
-      print("WaterGoal: ${_waterGoalController.text}");
-      print("WeightGoal: ${_weightGoalController.text}");
-
       await _firestore.collection('users').doc(currentUser?.uid).update({
         'username': _usernameController.text,
         'waterGoal': int.tryParse(_waterGoalController.text) ?? 0,
@@ -148,30 +160,153 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   fontFamily: 'Montserrat',
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               // Поле для вводу імені користувача
-              InputField(
+              TextField(
                 controller: _usernameController,
-                hintText: 'Username',
                 obscureText: false,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(15), // Обмеження в 15 символів
+                ],
+                decoration: const InputDecoration(
+                  hintText: "Username",
+                  labelText: "Username",
+                  hintStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  labelStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-
-              SizedBox(height: 4),
-
-              InputField(
+              const SizedBox(height: 32),
+              // Поле для водної цілі
+              TextField(
                 controller: _waterGoalController,
-                hintText: 'Water Goal (ml)',
                 obscureText: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  _RangeInputFormatter(0, 5000), // Введення від 0 до 5000
+                ],
+                decoration: const InputDecoration(
+                  hintText: "Water Goal (ml)",
+                  labelText: "Water Goal (kg)",
+                  hintStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  labelStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 32),
               // Поле для цілі ваги
-              InputField(
+              TextField(
                 controller: _weightGoalController,
-                hintText: 'Weight Goal (kg)',
                 obscureText: false,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  _RangeInputFormatter(0, 300), // Обмеження від 0 до 300
+                ],
+                decoration: const InputDecoration(
+                  hintText: "Weight Goal (kg)",
+                  labelText: "Weight Goal (kg)",
+                  hintStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  labelStyle: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 32),
+
+              Text(
+                'Start Weight: ',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,  // Make label bold
+                ),
+              ),
+              Text(
+                '$_startWeight kg',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,  // Keep value regular
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Height: ',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,  // Make label bold
+                ),
+              ),
+              Text(
+                '$_height cm',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,  // Keep value regular
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Date of Birth: ',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,  // Make label bold
+                ),
+              ),
+              Text(
+                '$_dob',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,  // Keep value regular
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Fitness Level: ',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,  // Make label bold
+                ),
+              ),
+              Text(
+                '$_fitnessLevel',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,  // Keep value regular
+                ),
+              ),
+
+              const SizedBox(height: 20),
               ButtonField(onTap: _updateUserProfile, buttonText: 'Save Profile'),
+
               LogoutButton()
             ],
           ),
@@ -184,3 +319,39 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 }
+
+
+class _RangeInputFormatter extends TextInputFormatter {
+  final double min;
+  final double max;
+
+  _RangeInputFormatter(this.min, this.max);
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      // Дозволяємо стирати всі символи
+      return newValue;
+    }
+
+    // Регулярний вираз дозволяє лише одну цифру після коми
+    final RegExp regex = RegExp(r'^\d*\.?\d{0,1}$');
+    if (!regex.hasMatch(newValue.text)) {
+      return oldValue; // Якщо введено більше цифр після коми, ігноруємо
+    }
+
+    // Перевірка, чи число знаходиться в межах
+    try {
+      final double? value = double.tryParse(newValue.text);
+      if (value == null || value < min || value > max) {
+        return oldValue; // Якщо значення не в діапазоні, повертаємо попереднє
+      }
+    } catch (e) {
+      return oldValue; // В разі помилки повертаємо попереднє значення
+    }
+
+    return newValue; // Дозволяємо коректне значення
+  }
+}
+
+

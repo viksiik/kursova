@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:kurs/program/pages/WeightBalancePage.dart'; // Assuming a WeightPage exists
+import 'package:kurs/program/pages/WeightBalancePage.dart';
 
-import '../../auth/infos/WeightPage.dart';
 import '../../main.dart';
-import '../pages/WaterPage.dart';
 
 class WeightBalanceWidget extends StatefulWidget {
   const WeightBalanceWidget({super.key});
@@ -20,9 +18,9 @@ class WeightBalanceWidget extends StatefulWidget {
 class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late String userId;
-  Map<DateTime, double> weightData = {}; // Changed from int to double for weight
+  Map<DateTime, double> weightData = {};
   double todayWeight = 0.0;
-  double goalWeight = 0.0; // Default goal for weight
+  double goalWeight = 0.0;
   double averageWeight = 0.0;
 
   @override
@@ -36,8 +34,10 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    userId = user.uid; // User ID
+    userId = user.uid;
     DateTime today = DateTime.now();
+    int currentMonth = today.month;
+    int currentYear = today.year;
 
     FirebaseFirestore.instance
         .collection('users')
@@ -56,26 +56,34 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
               ? (rawData['amount'] as int).toDouble()
               : rawData['amount'];
 
-          // Парсимо дату та вагу
-          DateTime date = DateTime.parse(doc.id);
+
           double weightAmount = rawData['amount'] ?? 0.0;
+          DateTime date = DateTime.parse(doc.id);
 
-          tempData[date] = weightAmount;
+          if (date.month == currentMonth && date.year == currentYear) {
+            if (!tempData.containsKey(date) || date.isAfter(tempData.keys.last)) {
+              tempData[date] = weightAmount;
+            }
 
-          if (date.day == today.day &&
-              date.month == today.month &&
-              date.year == today.year) {
-            todayWeight = weightAmount;
+            print('Checking date: ${date.toString()}');
+            print('Weight: $weightAmount');
+
+            if (date.day == today.day &&
+                date.month == today.month &&
+                date.year == today.year) {
+              print('Updating todayWeight: $weightAmount');
+              setState(() {
+                todayWeight = weightAmount;  // Оновлення todayWeight
+              });
+            }
+
+            sum += weightAmount;
+            count++;
           }
-
-          sum += weightAmount;
-          count++;
         } catch (e) {
           print("Error parsing document: $e");
         }
       }
-
-      print("Fetched weight data: $tempData");
 
       setState(() {
         weightData = tempData;
@@ -84,39 +92,12 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     });
   }
 
-  List<FlSpot> _generateChartData() {
+
+  List<FlSpot> _generateChartDataForMonth() {
     List<DateTime> sortedDates = weightData.keys.toList()..sort();
     return List.generate(sortedDates.length, (index) {
       DateTime date = sortedDates[index];
-      return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
-    });
-  }
-
-
-  List<FlSpot> _generateChartDataForLastDays(int days) {
-    List<DateTime> sortedDates = weightData.keys.toList()..sort();
-    final int startIndex = sortedDates.length > days
-        ? sortedDates.length - days
-        : 0;
-
-    return List.generate(sortedDates.length - startIndex, (index) {
-      DateTime date = sortedDates[index];
-      return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
-    });
-  }
-
-  List<FlSpot> _generateChartDataForLast7Days() {
-    DateTime today = DateTime.now();
-    DateTime sevenDaysAgo = today.subtract(Duration(days: 7));
-
-    // Filter the data to only include the last 7 days
-    List<DateTime> filteredDates = weightData.keys
-        .where((date) => date.isAfter(sevenDaysAgo) || date.isAtSameMomentAs(sevenDaysAgo))
-        .toList()
-      ..sort(); // Sort the dates in ascending order
-
-    return List.generate(filteredDates.length, (index) {
-      DateTime date = filteredDates[index];
+      // Виправлення: тут додаємо правильну дату
       return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
     });
   }
@@ -125,14 +106,14 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     double maxDataValue = weightData.values.isNotEmpty
         ? weightData.values.reduce((a, b) => a > b ? a : b).toDouble()
         : 0;
-    return max(maxDataValue, goalWeight.toDouble()) + 5; // Increased the buffer for weight
+    return max(maxDataValue, goalWeight.toDouble()) + 5; // Increased buffer for weight
   }
 
   Future<void> fetchWeightGoal() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    userId = user.uid; // ID користувача
+    userId = user.uid;
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -142,14 +123,10 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
 
       if (doc.exists) {
         var data = doc.data() as Map<String, dynamic>;
-        print('Fetched data: $data');
         setState(() {
           goalWeight = (data['weightGoal'] as num?)?.toDouble() ?? 0;
         });
-      } else {
-        print('No document found for user $userId');
       }
-
     } catch (error) {
       print('Error fetching data: $error');
     }
@@ -157,9 +134,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print("Generated chart data: ${_generateChartDataForLastDays(7)}");
-
-  return Container(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -189,23 +164,21 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
               ),
               IconButton(
                 icon: const Icon(
-                    Icons.arrow_forward,
-                    color: Colors.black,
-                    size: 20
+                  Icons.arrow_forward,
+                  color: Colors.black,
+                  size: 20,
                 ),
                 onPressed: () {
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
-                      builder: (context) => WeightBalancePage(), // Navigate to WeightPage
+                      builder: (context) => WeightBalancePage(), // Замість NewPage ваша нова сторінка
                     ),
                   );
                 },
-
               ),
             ],
           ),
           const SizedBox(height: 8),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -221,14 +194,13 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
             ],
           ),
           const SizedBox(height: 20),
-
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16.0),
             child: SizedBox(
               height: 150,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: false, drawVerticalLine: false), // Grid lines
+                  gridData: FlGridData(show: false, drawVerticalLine: false),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
@@ -255,16 +227,19 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                           if (value.toInt() < sortedDates.length) {
                             DateTime date = sortedDates[value.toInt()];
                             return Text(
-                              "${date.day} ${_getMonthShort(date.month)}",
-                              style: const TextStyle(color: Colors.black38,
+                              "${date.day}",
+                              style: const TextStyle(
+                                color: Colors.black38,
                                 fontSize: 10,
-                                fontFamily: 'Montserrat',),
+                                fontFamily: 'Montserrat',
+                              ),
                             );
                           }
                           return const SizedBox();
                         },
                       ),
                     ),
+
                     rightTitles: AxisTitles(),
                     topTitles: AxisTitles(),
                   ),
@@ -286,7 +261,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                             color: Color(0xFFE6B7FF),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                              fontFamily: 'Montserrat'
+                            fontFamily: 'Montserrat',
                           ),
                         ),
                       ),
@@ -301,7 +276,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                             color: Color(0xFF8CEAF2),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                              fontFamily: 'Montserrat'
+                            fontFamily: 'Montserrat',
                           ),
                         ),
                       ),
@@ -309,10 +284,9 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                   ),
                   minY: 0,
                   maxY: _calculateMaxY(),
-
                   lineBarsData: [
                     LineChartBarData(
-                      spots: _generateChartDataForLastDays(7),
+                      spots: _generateChartDataForMonth(),
                       isCurved: false,
                       color: Color(0xFF8587F8),
                       barWidth: 2,
@@ -323,7 +297,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -337,16 +311,14 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
             style: const TextStyle(
                 color: Colors.black54,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Montserrat'
-            )),
+                fontFamily: 'Montserrat')),
         const SizedBox(height: 4),
         Text(value,
             style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.black,
-                fontFamily: 'Montserrat'
-            )),
+                fontFamily: 'Montserrat')),
       ],
     );
   }

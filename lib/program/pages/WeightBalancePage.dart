@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../main.dart';
 import 'WaterPage.dart';
@@ -67,7 +69,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
 
   void fetchActivityData() async {
     DateTime now = DateTime.now();
-    DateTime startDate;
+    DateTime endDate;
 
     if (currentUser == null) {
       print("No authenticated user found.");
@@ -76,16 +78,19 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
 
     switch (selectedFilter) {
       case 'week':
-        startDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week (Monday)
+      // End date is the start of the week (Monday)
+        endDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week
         break;
       case 'month':
-        startDate = DateTime(now.year, now.month, 1); // Start of the month
+      // End date is the start of the month
+        endDate = DateTime(now.year, now.month, 1); // Start of the month
         break;
       case 'year':
-        startDate = DateTime(now.year, 1, 1);
+      // End date is the start of the year
+        endDate = DateTime(now.year, 1, 1); // Start of the year
         break;
       default:
-        startDate = DateTime(2000);
+        endDate = DateTime(2000); // Default case
         break;
     }
 
@@ -96,6 +101,8 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
         .snapshots()
         .listen((QuerySnapshot snapshot) {
       Map<DateTime, double> tempData = {};
+      Map<int, List<double>> monthlyData = {};  // For storing water data per month
+
       double sum = 0;
       int count = 0;
 
@@ -118,8 +125,16 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
 
           DateTime date = DateTime.parse(doc.id);
 
-          if (date.isAfter(startDate.subtract(Duration(days: 1)))) {
+          if (date.isBefore(now) && date.isAfter(endDate.subtract(Duration(days: 1)))) {
             tempData[date] = weightAmount;
+
+            if (selectedFilter == 'year') {
+              int month = date.month;
+              if (!monthlyData.containsKey(month)) {
+                monthlyData[month] = [];
+              }
+              monthlyData[month]!.add(weightAmount);
+            }
 
             if (date.year == now.year && date.month == now.month && date.day == now.day) {
               todayWeight = weightAmount;
@@ -137,54 +152,70 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
       print("Fetched weight data: $tempData");
 
       setState(() {
-        weightData = tempData;
+        weightData = Map.fromEntries(tempData.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
+
+        if (selectedFilter == 'year') {
+          Map<DateTime, double> monthlyAverages = {};
+          monthlyData.forEach((month, amounts) {
+            double sum = amounts.reduce((a, b) => a + b);
+            double average = (sum / amounts.length);  // Rounding to the nearest integer
+            DateTime monthDate = DateTime(now.year, month);
+            monthlyAverages[monthDate] = average;
+          });
+
+          weightData = monthlyAverages; // Update waterData to hold integer monthly averages
+        }
         averageWeight = count > 0 ? sum / count : 0;
       });
     });
   }
 
-  // Add the function to add weight data for today
   Future<void> addWeightData(double weight) async {
     final today = DateTime.now();
+
+    final formattedDate = DateFormat('yyyy-MM-dd').format(today);
+
     final weightRef = FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser?.uid)
         .collection('weight_balance')
-        .doc(today.toIso8601String()); // Use today's date as document ID
+        .doc(formattedDate); // Use the formatted date as document ID
 
-    // Check if there's already data for today
-    final docSnapshot = await weightRef.get();
-
-    if (docSnapshot.exists) {
-      print("Data already exists for today, not adding new entry.");
-      return;
-    }
-
-    // If no data for today, add the new weight entry
+    // Overwrite the existing data or add new data for today
     await weightRef.set({
       'amount': weight,
-      'date': today,
+      'date': formattedDate, // Store the formatted date as a string
     });
 
-    print("Weight data added for today: $weight");
+    print("Weight data updated for today: $weight");
     fetchActivityData(); // Refresh the data
   }
 
-  // Show a dialog to input weight
+
   void _showWeightInputDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         double weightInput = 0.0;
+        TextEditingController controller = TextEditingController();
+
         return AlertDialog(
-          title: Text("Enter Weight", style: TextStyle(fontFamily: 'Montserrat',),),
+          title: const Text(
+            "Enter Weight",
+            style: TextStyle(fontFamily: 'Montserrat'),
+          ),
           content: TextField(
-            keyboardType: TextInputType.number,
+            controller: TextEditingController(),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+              _RangeInputFormatter(0, 300),
+            ],
             onChanged: (value) {
               weightInput = double.tryParse(value) ?? 0.0;
             },
-            decoration: InputDecoration(
-                hintText: "Enter your weight",
+            decoration: const InputDecoration(
+              hintText: "Enter your weight",
               hintStyle: TextStyle(
                 fontFamily: 'Montserrat',
                 fontSize: 14.0,
@@ -197,24 +228,31 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text("Cancel", style: TextStyle(fontFamily: 'Montserrat',),),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(fontFamily: 'Montserrat'),
+              ),
             ),
             TextButton(
               onPressed: () async {
-                if (weightInput > 0) {
+                if (weightInput > 0 && weightInput <= 300) {
                   await addWeightData(weightInput);
                   Navigator.of(context).pop();
                 } else {
                   print("Invalid weight input");
                 }
               },
-              child: const Text("Add", style: TextStyle(fontFamily: 'Montserrat',),),
+              child: const Text(
+                "Add",
+                style: TextStyle(fontFamily: 'Montserrat'),
+              ),
             ),
           ],
         );
       },
     );
   }
+
 
   Widget buildFilterButton(String filterName) {
     return GestureDetector(
@@ -330,7 +368,11 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
                         if (value.toInt() < sortedDates.length) {
                           DateTime date = sortedDates[value.toInt()];
                           return Text(
-                            "${date.day} ${_getMonthShort(date.month)}",
+                            selectedFilter == 'month'
+                                ? "${date.day}"  // Display only the day if filter is "month"
+                                : selectedFilter == 'year'
+                                ? "${_getMonthShort(date.month)}"  // Display the month name if filter is "year"
+                                : "${date.day} ${_getMonthShort(date.month)}",
                             style: const TextStyle(
                               fontSize: 10,
                               fontFamily: 'Montserrat',
@@ -389,7 +431,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
                 maxY: _calculateMaxY(),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: _generateChartDataForLastDays(7),
+                    spots: _generateChartDataForLastDays(20),
                     isCurved: false,
                     color: Color(0xFF8587F8),
                     barWidth: 2,
@@ -523,5 +565,47 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
         ),
       ),
     );
+  }
+}
+
+class _RangeInputFormatter extends TextInputFormatter {
+  final double min;
+  final double max;
+
+  _RangeInputFormatter(this.min, this.max);
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+
+    // Дозволяємо очищати поле
+    if (text.isEmpty) {
+      return newValue;
+    }
+
+    // Якщо текст не є числом, повертаємо старе значення
+    final double? value = double.tryParse(text);
+    if (value == null) {
+      return oldValue;
+    }
+
+    // Якщо число виходить за межі, повертаємо старе значення
+    if (value < min || value > max) {
+      return oldValue;
+    }
+
+    // Ігноруємо все, що йде після однієї цифри після коми
+    final decimalIndex = text.indexOf('.');
+    if (decimalIndex != -1 && text.length - decimalIndex > 2) {
+      final truncatedText = text.substring(0, decimalIndex + 2);
+      return TextEditingValue(
+        text: truncatedText,
+        selection: TextSelection.collapsed(offset: truncatedText.length),
+      );
+    }
+
+    // Якщо значення коректне, залишаємо його
+    return newValue;
   }
 }

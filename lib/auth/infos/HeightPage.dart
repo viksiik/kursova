@@ -33,7 +33,7 @@ class HeightPage extends StatelessWidget {
           child: Indicator(currentValue: 1), // Розміщуємо Indicator по центру AppBar
         ),
       ),
-      body: SingleChildScrollView(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[

@@ -7,6 +7,7 @@ import 'charts/ActivityChart.dart';
 import 'charts/CurrentWoWidget.dart';
 import 'charts/MoodChart.dart';
 import 'charts/WaterDiagram.dart';
+import 'charts/WeightDiagram.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

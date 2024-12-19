@@ -47,12 +47,14 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pop(context);
 
       if (user != null) {
-        // Якщо користувач авторизований, перенаправляємо на HomePage
-        Navigator.pushReplacement(
+        // Якщо користувач авторизований, перенаправляємо на MainPage і очищуємо стек
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => MainPage(),
-          ),);
+          MaterialPageRoute(builder: (context) => MainPage()),
+              (route) => false, // Очищаємо стек навігації
+        );
       }
+
     } on FirebaseAuthException catch (e) {
       // Close the loading dialog in case of an error
       Navigator.pop(context);

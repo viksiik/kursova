@@ -32,7 +32,7 @@ class WeightPage extends StatelessWidget {
           ),
         ),
         body: Container(
-            child: SingleChildScrollView(
+            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[

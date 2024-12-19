@@ -205,13 +205,11 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
     }
   }
 
-  /// Функція для показу повідомлення.
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
   }
-
 
   Future<void> _markDayAsCompleted(int dayNumber) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -387,16 +385,19 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
             child: ElevatedButton(
               onPressed: () async {
                 await _stopProgramManually();
-              },
+             },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, // Червоний колір для кнопки
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0), // Padding inside the button
+                shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24.0), // Corner radius
               ),
-              child: const Text(
-                "Stop Program",
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
+              elevation: 5, // Button shadow
+             ), child: const Text(
+              "Stop Program",
+              style: TextStyle(fontSize: 16),
+            ),))
         ],
       ),
     );

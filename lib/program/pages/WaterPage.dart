@@ -1,9 +1,10 @@
 import 'dart:math';
-
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 import '../../main.dart';
 import 'WaterPage.dart';
@@ -67,28 +68,33 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
   void fetchActivityData() async {
     DateTime now = DateTime.now();
-    DateTime startDate;
+    DateTime endDate;
 
     if (currentUser == null) {
       print("No authenticated user found.");
       return;
     }
 
+    // Adjust the end date based on the selected filter
     switch (selectedFilter) {
       case 'week':
-        startDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week (Monday)
+      // End date is the start of the week (Monday)
+        endDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week
         break;
       case 'month':
-        startDate = DateTime(now.year, now.month, 1); // Start of the month
+      // End date is the start of the month
+        endDate = DateTime(now.year, now.month, 1); // Start of the month
         break;
       case 'year':
-        startDate = DateTime(now.year, 1, 1);
+      // End date is the start of the year
+        endDate = DateTime(now.year, 1, 1); // Start of the year
         break;
       default:
-        startDate = DateTime(2000);
+        endDate = DateTime(2000); // Default case
         break;
     }
 
+    // Fetch the data from Firestore
     FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser?.uid)
@@ -96,13 +102,13 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
         .snapshots()
         .listen((QuerySnapshot snapshot) {
       Map<DateTime, int> tempData = {};
+      Map<int, List<int>> monthlyData = {};  // For storing water data per month
       int sum = 0;
       int count = 0;
 
       for (var doc in snapshot.docs) {
         try {
           Map<String, dynamic> rawData = doc.data() as Map<String, dynamic>;
-
           print("Raw data: $rawData");
 
           int waterAmount = 0;
@@ -116,11 +122,20 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             }
           }
 
-          DateTime date = DateTime.parse(doc.id); // Парсимо ID як дату
-          //int waterAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
+          DateTime date = DateTime.parse(doc.id); // Use doc ID as date
 
-          if (date.isAfter(startDate.subtract(Duration(days: 1)))) {
+          // Check if the date is after the end date and before today
+          if (date.isBefore(now) && date.isAfter(endDate.subtract(Duration(days: 1)))) {
             tempData[date] = waterAmount;
+
+            // For the "year" filter, group by month
+            if (selectedFilter == 'year') {
+              int month = date.month;
+              if (!monthlyData.containsKey(month)) {
+                monthlyData[month] = [];
+              }
+              monthlyData[month]!.add(waterAmount);
+            }
 
             if (date.year == now.year && date.month == now.month && date.day == now.day) {
               todayWater = waterAmount;
@@ -136,7 +151,21 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
       }
 
       setState(() {
-        waterData = tempData;
+        // Sorting by date in ascending order
+        waterData = Map.fromEntries(tempData.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
+
+        if (selectedFilter == 'year') {
+          Map<DateTime, int> monthlyAverages = {};
+          monthlyData.forEach((month, amounts) {
+            int sum = amounts.reduce((a, b) => a + b);
+            int average = (sum / amounts.length).round();  // Rounding to the nearest integer
+            DateTime monthDate = DateTime(now.year, month);
+            monthlyAverages[monthDate] = average;
+          });
+
+          waterData = monthlyAverages; // Update waterData to hold integer monthly averages
+        }
+
         averageWater = count > 0 ? sum ~/ count : 0;
       });
     });
@@ -144,24 +173,21 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
   Future<void> addWaterAmount(int waterAmount) async {
     DateTime now = DateTime.now();
-    String dateString = now.toIso8601String().substring(0, 10); // Отримуємо лише дату без часу
+    //String dateString = now.toIso8601String().substring(0, 10); // Отримуємо лише дату без часу
+    final formattedDate = DateFormat('yyyy-MM-dd').format(now);
 
     try {
       DocumentReference docRef = FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser?.uid)
           .collection('water_balance')
-          .doc(dateString); // Використовуємо дату як ID документа
+          .doc(formattedDate); // Використовуємо дату як ID документа
 
-      DocumentSnapshot doc = await docRef.get();
+      await docRef.set({
+        'amount': waterAmount,
+        'date': formattedDate, // Store the formatted date as a string
+      });
 
-      if (doc.exists) {
-        // Якщо документ існує, оновлюємо кількість води
-        int existingAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
-        await docRef.update({'amount': existingAmount + waterAmount});
-      } else {
-        await docRef.set({'amount': waterAmount});
-      }
       fetchActivityData(); // Оновлюємо дані після додавання
     } catch (e) {
       print("Error adding water amount: $e");
@@ -174,12 +200,24 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        int waterInput = 0;
         return AlertDialog(
-          title: const Text("Enter the amount of water",
-          style: TextStyle(fontFamily: 'Montserrat',),),
+          title: const Text(
+            "Enter the amount of water",
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+            ),
+          ),
           content: TextField(
             controller: controller,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Дозволяє тільки цифри
+              _RangeInputFormatter(0, 5000), // Додаємо обмеження від 0 до 5000
+            ],
+            onChanged: (value) {
+              waterInput = int.tryParse(value) ?? 0;
+            },
             decoration: const InputDecoration(
               hintText: "Enter amount in ml",
               hintStyle: TextStyle(
@@ -188,24 +226,30 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
                 fontWeight: FontWeight.w400,
               ),
             ),
-
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text("Cancel", style: TextStyle(fontFamily: 'Montserrat',),),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(fontFamily: 'Montserrat'),
+              ),
             ),
             TextButton(
-              onPressed: () {
-                int waterAmount = int.tryParse(controller.text) ?? 0;
-                if (waterAmount > 0) {
-                  addWaterAmount(waterAmount);
+              onPressed: () async {
+                if (waterInput > 0 && waterInput <= 300) {
+                  await addWaterAmount(waterInput);
                   Navigator.of(context).pop();
+                } else {
+                  print("Invalid weight input");
                 }
               },
-              child: const Text("Add", style: TextStyle(fontFamily: 'Montserrat',),),
+              child: const Text(
+                "Add",
+                style: TextStyle(fontFamily: 'Montserrat'),
+              ),
             ),
           ],
         );
@@ -236,7 +280,6 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
       ),
     );
   }
-
 
   Widget buildFilterButton(String filterName) {
     return GestureDetector(
@@ -332,12 +375,17 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
                         if (value.toInt() < sortedDates.length) {
                           DateTime date = sortedDates[value.toInt()];
                           return Text(
-                            "${date.day} ${_getMonthShort(date.month)}",
+                            selectedFilter == 'month'
+                                ? "${date.day}"  // Display only the day if filter is "month"
+                                : selectedFilter == 'year'
+                                ? "${_getMonthShort(date.month)}"  // Display the month name if filter is "year"
+                                : "${date.day} ${_getMonthShort(date.month)}",
                             style: const TextStyle(
                               fontSize: 10,
                               fontFamily: 'Montserrat',
                             ),
                           );
+
                         }
                         return const SizedBox();
                       },
@@ -390,7 +438,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
                 maxY: _calculateMaxY(),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: _generateChartDataForLastDays(7),
+                    spots: _generateChartDataForLastDays(15),
                     isCurved: false,
                     color: Color(0xFF8587F8),
                     barWidth: 2,
@@ -408,11 +456,11 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 16.0),
-              _buildStatRow('Today', todayWater.toDouble()),
+              _buildStatRow('Today', todayWater.toInt()),
               const SizedBox(height: 10),
-              _buildStatRow('Goal', goalWater.toDouble()),
+              _buildStatRow('Goal', goalWater.toInt()),
               const SizedBox(height: 10),
-              _buildStatRow('Average', averageWater.toDouble()),
+              _buildStatRow('Average', averageWater.toInt()),
             ],
           ),
 
@@ -421,7 +469,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     );
   }
 
-  Widget _buildStatRow(String category, double value) {
+  Widget _buildStatRow(String category, int value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -437,7 +485,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
               ),
             ),
             Text(
-              ' ${value.toStringAsFixed(1)} ml', // Display the value as a rounded double
+              ' ${value} ml', // Display the value as a rounded double
               style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 16.0
@@ -464,7 +512,6 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
     return roundedValue;
   }
-
 
   List<FlSpot> _generateChartDataForLastDays(int days) {
     List<DateTime> sortedDates = waterData.keys.toList()..sort();
@@ -531,5 +578,28 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return months[month - 1];
+  }
+}
+
+class _RangeInputFormatter extends TextInputFormatter {
+  final int min;
+  final int max;
+
+  _RangeInputFormatter(this.min, this.max);
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final int? value = int.tryParse(newValue.text);
+    if (value != null && value >= min && value <= max) {
+      return newValue;
+    }
+    return oldValue;
   }
 }

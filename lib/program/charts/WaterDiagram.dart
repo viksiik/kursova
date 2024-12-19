@@ -1,11 +1,9 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kurs/program/pages/WaterPage.dart';
-
 import '../../main.dart';
 
 class WaterBalanceWidget extends StatefulWidget {
@@ -40,6 +38,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
 
     userId = user.uid; // ID користувача
     DateTime today = DateTime.now();
+    DateTime startOfMonth = DateTime(today.year, today.month, 1); // First day of the current month
 
     FirebaseFirestore.instance
         .collection('users')
@@ -55,26 +54,27 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
         try {
           DateTime date = DateTime.parse(doc.id);
           int waterAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
-          tempData[date] = waterAmount;
 
-          // Сьогоднішня кількість
-          if (date.day == today.day &&
-              date.month == today.month &&
-              date.year == today.year) {
-            todayWater = waterAmount;
+          // Include data only from the current month
+          if (date.month == today.month && date.year == today.year) {
+            tempData[date] = waterAmount;
+
+            // Сьогоднішня кількість
+            if (date.day == today.day) {
+              todayWater = waterAmount;
+            }
+
+            sum += waterAmount;
+            count++;
           }
-
-          sum += waterAmount;
-          count++;
-
         } catch (e) {
           print("Error parsing document: $e");
         }
       }
+
       setState(() {
         waterData = tempData;
         averageWater = count > 0 ? sum / count : 0;
-
       });
     });
   }
@@ -100,27 +100,14 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
       } else {
         print('No document found for user $userId');
       }
-
     } catch (error) {
       print('Error fetching data: $error');
     }
   }
 
-  List<FlSpot> _generateChartData() {
+  List<FlSpot> _generateChartDataForMonth() {
     List<DateTime> sortedDates = waterData.keys.toList()..sort();
     return List.generate(sortedDates.length, (index) {
-      DateTime date = sortedDates[index];
-      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0);
-    });
-  }
-
-  List<FlSpot> _generateChartDataForLastDays(int days) {
-    List<DateTime> sortedDates = waterData.keys.toList()..sort();
-    final int startIndex = sortedDates.length > days
-        ? sortedDates.length - days
-        : 0;
-
-    return List.generate(sortedDates.length - startIndex, (index) {
       DateTime date = sortedDates[index];
       return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0);
     });
@@ -197,114 +184,111 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
           ),
           const SizedBox(height: 20),
 
-      Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: SizedBox(
-          height: 150,
-          child: LineChart(
-            LineChartData(
-              gridData: FlGridData(show: false, drawVerticalLine: false), // Сітка
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: 500,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        "${value.toInt()}",
-                        style: const TextStyle(
-                          color: Colors.black38,
-                          fontSize: 10,
-                          fontFamily: 'Montserrat',),
-                      );
-                    },
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizedBox(
+              height: 150,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: false, drawVerticalLine: false), // Сітка
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: 500,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            "${value.toInt()}",
+                            style: const TextStyle(
+                              color: Colors.black38,
+                              fontSize: 10,
+                              fontFamily: 'Montserrat',),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          final List<DateTime> sortedDates =
+                          waterData.keys.toList()..sort();
+                          if (value.toInt() < sortedDates.length) {
+                            DateTime date = sortedDates[value.toInt()];
+                            return Text(
+                              "${date.day}",
+                              style: const TextStyle(
+                                color: Colors.black38,
+                                fontSize: 10,
+                                fontFamily: 'Montserrat',
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                    rightTitles: AxisTitles(),
+                    topTitles: AxisTitles(),
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      final List<DateTime> sortedDates =
-                      waterData.keys.toList()..sort();
-                      if (value.toInt() < sortedDates.length) {
-                        DateTime date = sortedDates[value.toInt()];
-                        return Text(
-                          "${date.day} ${_getMonthShort(date.month)}",
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                  ),
+                  extraLinesData: ExtraLinesData(
+                    horizontalLines: [
+                      HorizontalLine(
+                        y: goalWater.toDouble(),
+                        color: Color(0xFFE6B7FF),
+                        strokeWidth: 2,
+                        dashArray: [10, 4],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          labelResolver: (line) => "Goal: $goalWater ml",
                           style: const TextStyle(
-                            color: Colors.black38,
+                            color: Color(0xFFE6B7FF),
                             fontSize: 10,
+                            fontWeight: FontWeight.bold,
                             fontFamily: 'Montserrat',
                           ),
-                        );
-                      }
-                      return const SizedBox();
-                    },
-                  ),
-                ),
-                rightTitles: AxisTitles(),
-                topTitles: AxisTitles(),
-              ),
-              borderData: FlBorderData(
-                show: true,
-                border: Border.all(color: Colors.grey.withOpacity(0.5)),
-              ),
-              extraLinesData: ExtraLinesData(
-                horizontalLines: [
-                  HorizontalLine(
-                    y: goalWater.toDouble(),
-                    color: Color(0xFFE6B7FF),
-                    strokeWidth: 2,
-                    dashArray: [10, 4],
-                    label: HorizontalLineLabel(
-                      show: true,
-                      labelResolver: (line) => "Goal: $goalWater ml",
-                      style: const TextStyle(
-                        color: Color(0xFFE6B7FF),
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Montserrat',
-
+                        ),
                       ),
-                    ),
-                  ),
-                  HorizontalLine(
-                    y: averageWater.toDouble(),
-                    color: Color(0xFF8CEAF2).withOpacity(0.3),
-                    strokeWidth: 2,
-                    label: HorizontalLineLabel(
-                      show: true,
-                      labelResolver: (line) => "Avg: ${averageWater.toStringAsFixed(0)} ml",
-                      style: const TextStyle(
-                        color: Color(0xFF8CEAF2),
-                        fontSize: 10,
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.bold,
+                      HorizontalLine(
+                        y: averageWater.toDouble(),
+                        color: Color(0xFF8CEAF2).withOpacity(0.3),
+                        strokeWidth: 2,
+                        label: HorizontalLineLabel(
+                          show: true,
+                          labelResolver: (line) => "Avg: ${averageWater.toStringAsFixed(0)} ml",
+                          style: const TextStyle(
+                            color: Color(0xFF8CEAF2),
+                            fontSize: 10,
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              minY: 0,
-              maxY: _calculateMaxY(),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: _generateChartDataForLastDays(7), // Останні 7 днів
-                  isCurved: false,
-                  color: Color(0xFF8587F8),
-                  barWidth: 2,
-                  belowBarData: BarAreaData(show: false),
-                  dotData: FlDotData(show: true),
+                  minY: 0,
+                  maxY: _calculateMaxY(),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _generateChartDataForMonth(), // Данні для поточного місяця
+                      isCurved: false,
+                      color: Color(0xFF8587F8),
+                      barWidth: 2,
+                      belowBarData: BarAreaData(show: false),
+                      dotData: FlDotData(show: true),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-          Text('Goal: $goalWater ml')
-
-      ],
+        ],
       ),
     );
   }
@@ -339,4 +323,3 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
     return months[month - 1];
   }
 }
-

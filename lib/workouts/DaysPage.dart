@@ -156,7 +156,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     );
   }
 
-  // Отримання деталей програми
   void fetchProgramDetails() {
     _firestore
         .collection('programs')
@@ -295,12 +294,25 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton(
               onPressed: startWorkout,
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF8587F8),
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0), // Padding inside the button
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24.0), // Corner radius
+                ),
+                elevation: 5, // Button shadow
+              ),
               child: Text(
                 isProgramActive ? "Resume Workout" : "Start Workout",
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500, // Font weight
+                ),
               ),
             ),
-          ),
+          )
+
         ],
       ),
     );
