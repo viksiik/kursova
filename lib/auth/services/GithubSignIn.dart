@@ -8,9 +8,9 @@ class GithubAuthService {
   Future<void> signInWithGithub(BuildContext context) async {
     try {
       final GitHubSignIn githubSignIn = GitHubSignIn(
-        clientId: 'Ov23ligEqz1vv4urxCWD', // Замість надайте свій Client ID
-        clientSecret: '2eea44e9c8090e6c43b8cb0fb82726929b885663', // Замість надайте свій Client Secret
-        redirectUrl: 'https://workoutapp-95a25.firebaseapp.com/__/auth/handler', // Замість надайте свій Redirect URL
+        clientId: 'Ov23ligEqz1vv4urxCWD',
+        clientSecret: '2eea44e9c8090e6c43b8cb0fb82726929b885663',
+        redirectUrl: 'https://workoutapp-95a25.firebaseapp.com/__/auth/handler',
       );
 
       final result = await githubSignIn.signIn(context);

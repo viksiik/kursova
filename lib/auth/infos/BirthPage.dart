@@ -95,11 +95,11 @@ class _BirthdayPageState extends State<BirthdayPage> {
                   children: [
                     Text(
                       _selectedDate == null
-                          ? 'Select your birthday' // Текст для порожнього поля
-                          : _formatDate(_selectedDate!), // Відображення вибраної дати
+                          ? 'Select your birthday'
+                          : _formatDate(_selectedDate!),
                       style: TextStyle(
                         fontFamily: 'Montserrat',
-                        color: _selectedDate == null ? Colors.grey : Colors.black, // Чорний текст для вибраної дати
+                        color: _selectedDate == null ? Colors.grey : Colors.black,
                         fontSize: 14.0,
                       ),
                     ),

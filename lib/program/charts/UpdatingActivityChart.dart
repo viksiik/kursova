@@ -30,7 +30,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> {
     }
 
     try {
-      // Отримуємо всі документи з підколекції Activity
       QuerySnapshot snapshot = await _firestore
           .collection('users')
           .doc(currentUser?.uid)
@@ -43,7 +42,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> {
         print("Processing Document ID: ${doc.id}");
         print("Document Data: $data");
 
-        // Оновлюємо підсумки активностей
         setState(() {
           if (data.containsKey('abs')) {
             activityCount['abs'] =

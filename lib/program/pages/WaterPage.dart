@@ -27,7 +27,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
   Color fullColor = Color(0xFF8587F8);
   Color lowerColor = Color(0xFF8CEAF2);
 
-  Map<DateTime, int> waterData = {}; // Changed from double to int for water
+  Map<DateTime, int> waterData = {};
   int todayWater = 0;
   int goalWater = 0;
   int averageWater = 0;
@@ -43,7 +43,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    userId = user.uid; // ID користувача
+    userId = user.uid;
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -75,26 +75,22 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
       return;
     }
 
-    // Adjust the end date based on the selected filter
     switch (selectedFilter) {
       case 'week':
-      // End date is the start of the week (Monday)
-        endDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week
+
+        endDate = now.subtract(Duration(days: now.weekday - 1));
         break;
       case 'month':
-      // End date is the start of the month
-        endDate = DateTime(now.year, now.month, 1); // Start of the month
+        endDate = DateTime(now.year, now.month, 1);
         break;
       case 'year':
-      // End date is the start of the year
-        endDate = DateTime(now.year, 1, 1); // Start of the year
+        endDate = DateTime(now.year, 1, 1);
         break;
       default:
-        endDate = DateTime(2000); // Default case
+        endDate = DateTime(2000);
         break;
     }
 
-    // Fetch the data from Firestore
     FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser?.uid)
@@ -102,7 +98,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
         .snapshots()
         .listen((QuerySnapshot snapshot) {
       Map<DateTime, int> tempData = {};
-      Map<int, List<int>> monthlyData = {};  // For storing water data per month
+      Map<int, List<int>> monthlyData = {};
       int sum = 0;
       int count = 0;
 
@@ -122,13 +118,11 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             }
           }
 
-          DateTime date = DateTime.parse(doc.id); // Use doc ID as date
+          DateTime date = DateTime.parse(doc.id);
 
-          // Check if the date is after the end date and before today
           if (date.isBefore(now) && date.isAfter(endDate.subtract(Duration(days: 1)))) {
             tempData[date] = waterAmount;
 
-            // For the "year" filter, group by month
             if (selectedFilter == 'year') {
               int month = date.month;
               if (!monthlyData.containsKey(month)) {
@@ -151,19 +145,18 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
       }
 
       setState(() {
-        // Sorting by date in ascending order
         waterData = Map.fromEntries(tempData.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
 
         if (selectedFilter == 'year') {
           Map<DateTime, int> monthlyAverages = {};
           monthlyData.forEach((month, amounts) {
             int sum = amounts.reduce((a, b) => a + b);
-            int average = (sum / amounts.length).round();  // Rounding to the nearest integer
+            int average = (sum / amounts.length).round();
             DateTime monthDate = DateTime(now.year, month);
             monthlyAverages[monthDate] = average;
           });
 
-          waterData = monthlyAverages; // Update waterData to hold integer monthly averages
+          waterData = monthlyAverages;
         }
 
         averageWater = count > 0 ? sum ~/ count : 0;
@@ -173,7 +166,6 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
   Future<void> addWaterAmount(int waterAmount) async {
     DateTime now = DateTime.now();
-    //String dateString = now.toIso8601String().substring(0, 10); // Отримуємо лише дату без часу
     final formattedDate = DateFormat('yyyy-MM-dd').format(now);
 
     try {
@@ -181,18 +173,27 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
           .collection('users')
           .doc(currentUser?.uid)
           .collection('water_balance')
-          .doc(formattedDate); // Використовуємо дату як ID документа
+          .doc(formattedDate);
 
-      await docRef.set({
-        'amount': waterAmount,
-        'date': formattedDate, // Store the formatted date as a string
-      });
+      DocumentSnapshot docSnapshot = await docRef.get();
 
-      fetchActivityData(); // Оновлюємо дані після додавання
+      if (docSnapshot.exists) {
+        int existingAmount = docSnapshot['amount'] ?? 0;
+        await docRef.update({
+          'amount': existingAmount + waterAmount,
+        });
+      } else {
+        await docRef.set({
+          'amount': waterAmount,
+          'date': formattedDate,
+        });
+      }
+
     } catch (e) {
       print("Error adding water amount: $e");
     }
   }
+
 
   void _showAddWaterDialog() {
     TextEditingController controller = TextEditingController();
@@ -212,8 +213,8 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             controller: controller,
             keyboardType: TextInputType.number,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // Дозволяє тільки цифри
-              _RangeInputFormatter(0, 5000), // Додаємо обмеження від 0 до 5000
+              FilteringTextInputFormatter.digitsOnly,
+              _RangeInputFormatter(0, 5000),
             ],
             onChanged: (value) {
               waterInput = int.tryParse(value) ?? 0;
@@ -239,7 +240,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
             ),
             TextButton(
               onPressed: () async {
-                if (waterInput > 0 && waterInput <= 300) {
+                if (waterInput > 0 && waterInput <= 5000) {
                   await addWaterAmount(waterInput);
                   Navigator.of(context).pop();
                 } else {
@@ -258,11 +259,11 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
   }
 
   Widget _buildAddWaterButton() {
-    return Center(  // Додаємо обгортку для вирівнювання по центру
+    return Center(
       child: ElevatedButton(
         onPressed: _showAddWaterDialog,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF8587F8), // Вибір кольору кнопки
+          backgroundColor: Color(0xFF8587F8),
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
           textStyle: const TextStyle(
             fontFamily: 'Montserrat',
@@ -294,12 +295,12 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: selectedFilter == filterName
-                ? Color(0xFF8587F8) // Фіолетове підсвічування при виборі
+                ? Color(0xFF8587F8)
                 : Color(0xFFFBF4FF),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
-              width: 1, // Товщина обведення
+              color: Colors.grey.withOpacity(0.1),
+              width: 1,
             ),
 
             boxShadow: selectedFilter == filterName
@@ -357,7 +358,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
                       interval: 500,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          "${value.toStringAsFixed(0)}",  // Integer format
+                          "${value.toStringAsFixed(0)}",
                           style: const TextStyle(
                             fontSize: 10,
                             fontFamily: 'Montserrat',
@@ -376,9 +377,9 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
                           DateTime date = sortedDates[value.toInt()];
                           return Text(
                             selectedFilter == 'month'
-                                ? "${date.day}"  // Display only the day if filter is "month"
+                                ? "${date.day}"
                                 : selectedFilter == 'year'
-                                ? "${_getMonthShort(date.month)}"  // Display the month name if filter is "year"
+                                ? "${_getMonthShort(date.month)}"
                                 : "${date.day} ${_getMonthShort(date.month)}",
                             style: const TextStyle(
                               fontSize: 10,
@@ -477,7 +478,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '$category:', // Display the value as a rounded double
+              '$category:',
               style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 16.0,
@@ -485,7 +486,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
               ),
             ),
             Text(
-              ' ${value} ml', // Display the value as a rounded double
+              ' ${value} ml',
               style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 16.0
@@ -499,15 +500,14 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
   double _calculateMaxY() {
     if (waterData.isEmpty) {
-      return 2500; // Повертає стандартне значення, якщо немає даних
+      return 2500;
     }
 
     int maxDataValue = waterData.values
-        .where((value) => value != null) // Фільтруємо null значення
-        .fold(0, (prev, value) => max(prev, value)); // Знаходимо максимум
+        .where((value) => value != null)
+        .fold(0, (prev, value) => max(prev, value));
 
-    // Округлення вгору до найближчого кратного 5
-    double roundedValue = (max(maxDataValue, 2100) + 400) / 5; // Додаємо 4 для округлення
+    double roundedValue = (max(maxDataValue, 2100) + 400) / 5;
     roundedValue = roundedValue.ceil() * 5;
 
     return roundedValue;
@@ -521,7 +521,7 @@ class _WaterBalancePageState extends State<WaterBalancePage> {
 
     return List.generate(sortedDates.length - startIndex, (index) {
       DateTime date = sortedDates[index];
-      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0.0);  // Double for chart
+      return FlSpot(index.toDouble(), waterData[date]?.toDouble() ?? 0.0);
     });
   }
 

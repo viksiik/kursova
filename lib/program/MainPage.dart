@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kurs/program/charts/WeightDiagram.dart';
-import '../BottomBar.dart'; // Ваш кастомний BottomNavBar
+import '../BottomBar.dart';
 import '../profile/ProfilePage.dart';
 import '../workouts/WorkoutPage.dart';
 import 'charts/ActivityChart.dart';
@@ -17,23 +17,21 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 0; // Індекс вибраної вкладки
+  int _currentIndex = 0;
 
   void _onNavTap(int index) {
     if (index == 1) {
-      // Перенаправлення на Workouts Page
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainWorkoutPage()),
       );
     } else if (index == 2) {
-      // Перенаправлення на Profile Page
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => UserProfilePage()),
       );
     } else {
-      // Залишаємося на поточній сторінці
       setState(() {
         _currentIndex = index;
       });

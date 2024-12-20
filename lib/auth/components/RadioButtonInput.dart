@@ -39,7 +39,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
                 firestoreHelper.setData(
                   "users",
                   {"Gender": _selectedGender},
-                );  // Збереження вибору
+                );
               }
             },
           ),
@@ -65,7 +65,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
                 firestoreHelper.setData(
                   "users",
                   {"Gender": _selectedGender},
-                );  // Збереження вибору
+                );
               }
             },
           ),
@@ -91,7 +91,7 @@ class _RadioButtonInputState extends State<RadioButtonInput> {
                 firestoreHelper.setData(
                   "users",
                   {"Gender": _selectedGender},
-                ); // Збереження вибору
+                );
               }
             },
           ),

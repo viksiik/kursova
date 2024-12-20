@@ -8,7 +8,7 @@ class ProgramCard extends StatelessWidget {
   final String year;
   final String imageUrl;
   final String gradColor;
-  final VoidCallback? onTap; // Додаємо onTap
+  final VoidCallback? onTap;
 
   const ProgramCard({
     super.key,

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import '../components/ButtonField.dart';
 import '../components/LogoImage.dart';
 import '../infos/GenderPage.dart';
@@ -24,8 +25,18 @@ class _RegisterPageState extends State<RegisterPage> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final FirestoreHelper firestoreHelper = FirestoreHelper();
+  bool isPasswordVisible = false;
 
   void signUserUp() async {
+    if (passwordController.text.length < 6) {
+      ErrorDialog.show(
+        context,
+        'Password must be at least 6 characters long.',
+        'Error',
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -36,7 +47,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     try {
-      // Виконуємо вхід користувача
       if (passwordController.text == confirmPasswordController.text) {
         UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
@@ -44,7 +54,6 @@ class _RegisterPageState extends State<RegisterPage> {
           password: passwordController.text,
         );
 
-        // Після успішного входу, перевіряємо стан автентифікації
         User? user = userCredential.user;
 
         firestoreHelper.setData(
@@ -52,16 +61,16 @@ class _RegisterPageState extends State<RegisterPage> {
           {"Email": emailController.text.trim()},
         );
 
-        // Close the loading dialog
         Navigator.pop(context);
 
         if (user != null) {
-          // Якщо користувач авторизований, перенаправляємо на HomePage
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => GenderPage(),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  GenderPage(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
                 return FadeTransition(
                   opacity: animation,
                   child: child,
@@ -70,31 +79,31 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           );
         } else {
-          // Якщо користувач не знайдений, перенаправляємо на welcomeScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => RegisterPage(onTap: () {  },)),
+            MaterialPageRoute(
+              builder: (context) => RegisterPage(
+                onTap: () {},
+              ),
+            ),
           );
         }
-      }
-      else {
+      } else {
         ErrorDialog.show(context, 'Passwords don`t match', 'Error');
       }
     } on FirebaseAuthException catch (e) {
-      // Close the loading dialog in case of an error
+
       Navigator.pop(context);
 
       String errorMessage;
 
-      // Обробка помилок
-      if (e.code == 'user-not-found') {
-        errorMessage = 'Such user was not found.';
-      }
-      else if (e.code == 'wrong-password') {
-        errorMessage = 'Wrong password. Try again.';
-      }
-      else {
-        errorMessage = 'Unable to sign up. Check your email or/and password.\n\n*Maybe you already have an account.';
+      if (e.code == 'email-already-in-use') {
+        errorMessage = 'This email is already registered.';
+      } else if (e.code == 'weak-password') {
+        errorMessage = 'Password is too weak.';
+      } else {
+        errorMessage =
+        'Unable to sign up. Check your email or password.\n\n*Maybe you already have an account.';
       }
 
       ErrorDialog.show(context, errorMessage, 'Error');
@@ -102,18 +111,6 @@ class _RegisterPageState extends State<RegisterPage> {
       ErrorDialog.show(context, 'Something went wrong. Try again later.', 'Error');
     }
   }
-
-  // Future addUserDetails(String email) async {
-  //   try {
-  //     await FirebaseFirestore.instance.collection('users').add({
-  //       'Email': email,
-  //       'Username': 'Hello',
-  //     });
-  //     print("User added successfully!");
-  //   } catch (e) {
-  //     print("Error adding user: $e");
-  //   }
-  // }
 
 
   @override
@@ -134,7 +131,6 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children:[
-                // text
                 Container(
                     margin: const EdgeInsets.only(top:64.0, bottom: 24.0),
                     child: const Text("Sign up",
@@ -155,16 +151,92 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
 
                 //password input
-                InputField(
-                  controller: passwordController,
-                  hintText: "Password",
-                  obscureText: true,
+                Container(
+                  margin: const EdgeInsets.only(top: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 36.0),
+                  child: TextField(
+                    controller: passwordController,
+                    obscureText: !isPasswordVisible,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(30),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      hintText: "Password",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      fillColor: const Color(0xFFFBF4FF),
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: Colors.grey.shade700,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordVisible = !isPasswordVisible;
+                          });
+                        },
+                      ),
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14.0,
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                  ),
                 ),
 
-                InputField(
-                  controller: confirmPasswordController,
-                  hintText: "Confirm password",
-                  obscureText: true,
+                Container(
+                  margin: const EdgeInsets.only(top: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 36.0),
+                  child: TextField(
+                    controller: confirmPasswordController,
+                    obscureText: !isPasswordVisible,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(30),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: "Confirm password",
+                      hintText: "Confirm password",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      fillColor: const Color(0xFFFBF4FF),
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: Colors.grey.shade700,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordVisible = !isPasswordVisible;
+                          });
+                        },
+                      ),
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14.0,
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                  ),
                 ),
 
                 ButtonField(

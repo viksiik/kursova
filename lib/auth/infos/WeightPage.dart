@@ -28,7 +28,7 @@ class WeightPage extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Color(0xFFE6B7FF),
           flexibleSpace: Center(
-            child: Indicator(currentValue: 2), // Розміщуємо Indicator по центру AppBar
+            child: Indicator(currentValue: 2),
           ),
         ),
         body: Container(
@@ -75,7 +75,7 @@ class WeightPage extends StatelessWidget {
                       final _inputedWeight = double.tryParse(weightController.text);
 
                       if (_inputedWeight != null) {
-                        // Зберігаємо дані у Firestore
+
                         firestoreHelper.setData(
                           "users",
                           {"Weight": _inputedWeight},

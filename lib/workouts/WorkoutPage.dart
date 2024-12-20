@@ -18,12 +18,12 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
   int _currentIndex = 1;
   String searchQuery = '';
   List<Map<String, dynamic>> programsList = [];
-  List<Map<String, dynamic>> originalProgramsList = []; // Зберігає повний список програм
-  bool isSorted = false; // Змінна для збереження стану сортування
+  List<Map<String, dynamic>> originalProgramsList = [];
+  bool isSorted = false;
 
-  String? selectedCategory; // Обрана категорія
-  String? selectedDifficulty; // Обрана складність
-  bool filtersApplied = false; // Чи є застосовані фільтри
+  String? selectedCategory;
+  String? selectedDifficulty;
+  bool filtersApplied = false;
 
   Future<void> loadPrograms() async {
     try {
@@ -34,19 +34,18 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
           .toList();
       setState(() {
         programsList = programs;
-        originalProgramsList = List.from(programs); // Зберігаємо оригінал
+        originalProgramsList = List.from(programs);
       });
     } catch (e) {
       print('Error loading programs: $e');
     }
   }
 
-  // Функція для скидання сортування
   void resetSort() {
     setState(() {
-      isSorted = false; // Встановлюємо, що сортування скинуте
+      isSorted = false;
     });
-    loadPrograms(); // Перезавантажуємо програми з Firestore
+    loadPrograms();
   }
 
   List<Map<String, dynamic>> filterPrograms(String query) {
@@ -96,7 +95,7 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
               : titleB.compareTo(titleA);
         });
       }
-      isSorted = true; // Оновлюємо статус сортування
+      isSorted = true;
     });
   }
 
@@ -163,7 +162,7 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                 },
               ),
               Container(
-                child: Center(  // Center widget ensures the button is centered
+                child: Center(
                   child: ElevatedButton.icon(
                     onPressed: () {
                       resetSort();
@@ -234,10 +233,10 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                     applyFilters();
                   },
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  selectedColor: Color(0xFF8587F8), // Adjust color for selected chip
-                  backgroundColor: Colors.white38, // Adjust color for unselected chip
+                  selectedColor: Color(0xFF8587F8),
+                  backgroundColor: Colors.white38,
                 ))
                     .toList(),
               ),
@@ -265,16 +264,16 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                     applyFilters();
                   },
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  selectedColor: Color(0xFF8587F8), // Adjust color for selected chip
-                  backgroundColor: Colors.white38, // Adjust color for unselected chip
+                  selectedColor: Color(0xFF8587F8),
+                  backgroundColor: Colors.white38,
                 ))
                     .toList(),
               ),
               const SizedBox(height: 20),
               Container(
-                child: Center(  // Center widget ensures the button is centered
+                child: Center(
                   child: ElevatedButton.icon(
                     onPressed: () {
                       resetFilters();
@@ -322,7 +321,6 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
         return matchesCategory && matchesDifficulty;
       }).toList();
 
-      // Перевірка, чи є застосовані фільтри
       filtersApplied = selectedCategory != null || selectedDifficulty != null;
     });
   }
@@ -349,7 +347,6 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Пошукове поле
                 Container(
                   width: 250,
                   height: 36,
@@ -374,11 +371,10 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
                     },
                   ),
                 ),
-                // Іконка сортування
                 IconButton(
                   icon: Icon(
                     Icons.sort,
-                    color: isSorted ? Colors.black : Colors.grey, // Змінюємо колір іконки
+                    color: isSorted ? Colors.black : Colors.grey,
                   ),
                   onPressed: _showSortMenu,
                 ),

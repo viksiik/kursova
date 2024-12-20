@@ -13,14 +13,14 @@ class CurrentProgramWidget extends StatefulWidget {
 
 class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
 
-  final Color progressColor = Color(0xFF8587F8); // Color for progress indicator
+  final Color progressColor = Color(0xFF8587F8);
 
   Stream<Map<String, dynamic>?> fetchCurrentProgram() {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
       print("No authenticated user found.");
-      return Stream.value(null); // Якщо користувач не аутентифікований, повертаємо потік з null.
+      return Stream.value(null);
     }
 
     return FirebaseFirestore.instance
@@ -28,10 +28,10 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
         .doc(currentUser.uid)
         .collection('currentProgram')
         .where('isActive', isEqualTo: true)
-        .snapshots() // Використовуємо snapshots() для реального часу
+        .snapshots()
         .map((snapshot) {
       if (snapshot.docs.isEmpty) {
-        return null; // Якщо немає активної програми
+        return null;
       }
 
       final programData = snapshot.docs.first.data() as Map<String, dynamic>?;
@@ -142,7 +142,7 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
               ),
             ],
           ),
-          //const SizedBox(height: 8),
+
           Container(
             margin: const EdgeInsets.only(right: 32.0),
             alignment: Alignment.centerRight,
@@ -159,7 +159,7 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
           Row(
             children: [
               Container(
-                //padding: const EdgeInsets.only(bottom: 16.0),
+
                 height: 132,
                 width: 132,
                 decoration: BoxDecoration(
@@ -186,8 +186,8 @@ class _CurrentProgramWidgetState extends State<CurrentProgramWidget> {
                     alignment: Alignment.center,
                     children: [
                       SizedBox(
-                        width: 56.0, // Ширина кола
-                        height: 56.0, // Висота кола
+                        width: 56.0,
+                        height: 56.0,
                         child: CircularProgressIndicator(
                           value: progress,
                           color: progressColor,

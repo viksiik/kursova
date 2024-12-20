@@ -73,7 +73,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                 date.year == today.year) {
               print('Updating todayWeight: $weightAmount');
               setState(() {
-                todayWeight = weightAmount;  // Оновлення todayWeight
+                todayWeight = weightAmount;
               });
             }
 
@@ -97,7 +97,6 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     List<DateTime> sortedDates = weightData.keys.toList()..sort();
     return List.generate(sortedDates.length, (index) {
       DateTime date = sortedDates[index];
-      // Виправлення: тут додаємо правильну дату
       return FlSpot(index.toDouble(), weightData[date]?.toDouble() ?? 0);
     });
   }
@@ -106,7 +105,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
     double maxDataValue = weightData.values.isNotEmpty
         ? weightData.values.reduce((a, b) => a > b ? a : b).toDouble()
         : 0;
-    return max(maxDataValue, goalWeight.toDouble()) + 5; // Increased buffer for weight
+    return max(maxDataValue, goalWeight.toDouble()) + 5;
   }
 
   Future<void> fetchWeightGoal() async {
@@ -171,7 +170,7 @@ class _WeightBalanceWidgetState extends State<WeightBalanceWidget> {
                 onPressed: () {
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
-                      builder: (context) => WeightBalancePage(), // Замість NewPage ваша нова сторінка
+                      builder: (context) => WeightBalancePage(),
                     ),
                   );
                 },

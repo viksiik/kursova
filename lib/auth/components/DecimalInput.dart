@@ -21,7 +21,7 @@ class DecimalInput extends StatelessWidget {
       child: TextField(
         keyboardType: TextInputType.numberWithOptions(decimal: true),
         inputFormatters: <TextInputFormatter>[
-          DecimalInputFormatter(), // Використовуємо кастомний фільтр
+          DecimalInputFormatter(),
         ],
         controller: controller,
         obscureText: obscureText,

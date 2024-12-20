@@ -22,7 +22,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
   String category = "";
   String difficulty = "";
   String duration = "";
-  String activeProgram = ''; // Змінна для зберігання активного воркауту
+  String activeProgram = '';
   bool isProgramActive = false;
 
   @override
@@ -33,7 +33,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     checkActiveProgram();
   }
 
-  // Перевірка, чи є активний воркаут
   void checkActiveProgram() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -49,7 +48,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
 
       if (doc.exists && doc['isActive'] == true) {
         setState(() {
-          activeProgram = doc['programId'] ?? ''; // Перевіряємо, чи є цей воркаут активним
+          activeProgram = doc['programId'] ?? '';
           isProgramActive = activeProgram.isNotEmpty;
         });
       }
@@ -64,7 +63,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     if (user == null) return;
 
     try {
-      // Fetch user's active program
       final currentProgramDoc = await _firestore
           .collection('users')
           .doc(user.uid)
@@ -72,13 +70,10 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
           .where('isActive', isEqualTo: true)
           .get();
 
-      // If the user already has an active program
       if (currentProgramDoc.docs.isNotEmpty) {
-        // Get the existing active program
         final activeProgramData = currentProgramDoc.docs.first.data();
         final activeProgramId = activeProgramData['programId'];
 
-        // Check if the active program is the same as the one the user wants to start
         if (activeProgramId == widget.workoutName) {
           _showMessage("You are already doing this workout!");
         } else {
@@ -87,7 +82,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
         return;
       }
 
-      // Fetch the program document from the 'programs' collection
       final programDoc = await _firestore
           .collection('programs')
           .doc(widget.workoutName)
@@ -100,7 +94,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
 
       int totalDays = 28;
 
-      // Extract weeks and calculate total days
       final duration = programDoc['duration'] ?? '';
       final match = RegExp(r'(\d+)').firstMatch(duration);
 
@@ -117,7 +110,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
         return;
       }
 
-      // Add the program to the user's currentProgram collection
       await _firestore
           .collection('users')
           .doc(user.uid)
@@ -126,7 +118,7 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
           .set({
         'programId': widget.workoutName,
         'startDate': DateTime.now(),
-        'isActive': true, // Set the program as active
+        'isActive': true,
         'category': programData['category'] ?? 'Unknown',
         'difficulty': programData['difficulty'] ?? 'Unknown',
         'duration': programData['duration'] ?? 'Unknown',
@@ -136,7 +128,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
         'year': programData['year']
       });
 
-      // Update the local state
       setState(() {
         isProgramActive = true;
         activeProgram = widget.workoutName;
@@ -149,7 +140,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     }
   }
 
-  // Функція для показу повідомлення
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -174,7 +164,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     });
   }
 
-  // Отримання днів програми
   void fetchProgramDays() {
     _firestore
         .collection('programs')
@@ -226,7 +215,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
             ),
           ),
 
-          // Filters Section (Category, Difficulty, Duration)
           Container(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -297,17 +285,17 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Color(0xFF8587F8),
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0), // Padding inside the button
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24.0), // Corner radius
+                  borderRadius: BorderRadius.circular(24.0),
                 ),
-                elevation: 5, // Button shadow
+                elevation: 5,
               ),
               child: Text(
                 isProgramActive ? "Resume Workout" : "Start Workout",
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500, // Font weight
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -318,7 +306,6 @@ class _WeightLossProgramState extends State<WeightLossProgram> {
     );
   }
 
-  // Віджет для відображення фільтрів (категорія, складність, тривалість)
   Widget _buildProgramInfoContainer(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

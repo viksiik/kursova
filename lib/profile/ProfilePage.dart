@@ -1,10 +1,7 @@
-import 'dart:io';
-import 'dart:convert'; // Для роботи з Base64
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:kurs/auth/components/ButtonField.dart';
-import 'package:kurs/auth/components/InputField.dart';
 
 import '../BottomBar.dart';
 import '../auth/components/DialogMessage.dart';
@@ -42,7 +39,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _loadUserData();
   }
 
-  // Завантаження даних користувача з Firestore
   void _loadUserData() async {
     if (currentUser == null) {
       print("No authenticated user found.");
@@ -66,7 +62,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _startWeight = userData['Weight']?.toString() ?? '';
           _height = userData['Height']?.toString() ?? '';
           _dob = userData['Birthday'] != null
-              ? DateTime.parse(userData['Birthday']).toString().split(' ')[0]  // Directly parse string to DateTime
+              ? DateTime.parse(userData['Birthday']).toString().split(' ')[0]
               : '';
           _fitnessLevel = userData['SportLevel'] ?? '';
 
@@ -161,12 +157,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Поле для вводу імені користувача
+
               TextField(
                 controller: _usernameController,
                 obscureText: false,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(15), // Обмеження в 15 символів
+                  LengthLimitingTextInputFormatter(15),
                 ],
                 decoration: const InputDecoration(
                   hintText: "Username",
@@ -184,13 +180,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               const SizedBox(height: 32),
-              // Поле для водної цілі
+
               TextField(
                 controller: _waterGoalController,
                 obscureText: false,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  _RangeInputFormatter(0, 5000), // Введення від 0 до 5000
+                  _RangeInputFormatter(0, 5000),
                 ],
                 decoration: const InputDecoration(
                   hintText: "Water Goal (ml)",
@@ -208,13 +204,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               const SizedBox(height: 32),
-              // Поле для цілі ваги
+
               TextField(
                 controller: _weightGoalController,
                 obscureText: false,
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  _RangeInputFormatter(0, 300), // Обмеження від 0 до 300
+                  _RangeInputFormatter(0, 300),
                 ],
                 decoration: const InputDecoration(
                   hintText: "Weight Goal (kg)",
@@ -233,81 +229,107 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
               const SizedBox(height: 32),
 
-              Text(
-                'Start Weight: ',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,  // Make label bold
-                ),
-              ),
-              Text(
-                '$_startWeight kg',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w400,  // Keep value regular
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Start Weight: ',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_startWeight kg',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Height: ',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_height cm',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Date of Birth: ',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_dob',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Fitness Level: ',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_fitnessLevel',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
-
-              Text(
-                'Height: ',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,  // Make label bold
-                ),
-              ),
-              Text(
-                '$_height cm',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w400,  // Keep value regular
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Date of Birth: ',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,  // Make label bold
-                ),
-              ),
-              Text(
-                '$_dob',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w400,  // Keep value regular
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Fitness Level: ',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,  // Make label bold
-                ),
-              ),
-              Text(
-                '$_fitnessLevel',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w400,  // Keep value regular
-                ),
-              ),
-
-              const SizedBox(height: 20),
               ButtonField(onTap: _updateUserProfile, buttonText: 'Save Profile'),
-
-              LogoutButton()
+              LogoutButton(),
             ],
           ),
         ),
@@ -318,6 +340,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ),
     );
   }
+
 }
 
 
@@ -330,27 +353,24 @@ class _RangeInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) {
-      // Дозволяємо стирати всі символи
       return newValue;
     }
 
-    // Регулярний вираз дозволяє лише одну цифру після коми
     final RegExp regex = RegExp(r'^\d*\.?\d{0,1}$');
     if (!regex.hasMatch(newValue.text)) {
-      return oldValue; // Якщо введено більше цифр після коми, ігноруємо
+      return oldValue;
     }
 
-    // Перевірка, чи число знаходиться в межах
     try {
       final double? value = double.tryParse(newValue.text);
       if (value == null || value < min || value > max) {
-        return oldValue; // Якщо значення не в діапазоні, повертаємо попереднє
+        return oldValue;
       }
     } catch (e) {
-      return oldValue; // В разі помилки повертаємо попереднє значення
+      return oldValue;
     }
 
-    return newValue; // Дозволяємо коректне значення
+    return newValue;
   }
 }
 

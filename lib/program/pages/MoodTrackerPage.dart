@@ -19,8 +19,8 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     'depressed': Color(0xFF996AFF),
   };
 
-  Map<String, String> moodData = {}; // Мапа для збереження даних настроїв
-  String selectedMonth = DateFormat('yyyy-MM').format(DateTime.now()); // Поточний місяць
+  Map<String, String> moodData = {};
+  String selectedMonth = DateFormat('yyyy-MM').format(DateTime.now());
 
   @override
   void initState() {
@@ -30,12 +30,11 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
 
   Future<void> _fetchMoodData() async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
-    final user = _auth.currentUser; // Отримуємо поточного користувача
+    final user = _auth.currentUser;
     if (user == null) return;
 
-    final String userId = user.uid; // UID користувача
+    final String userId = user.uid;
 
-    // Слухаємо зміни в колекції настроїв
     FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -45,9 +44,8 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
       final Map<String, String> moods = {};
 
       for (var doc in snapshot.docs) {
-        final String date = doc.id; // Використовуємо ID документа як дату
+        final String date = doc.id;
 
-        // Фільтруємо дані за обраний місяць
         if (date.startsWith(selectedMonth)) {
           final String mood = doc['mood'] as String;
           moods[date] = mood;
@@ -55,19 +53,18 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
       }
 
       setState(() {
-        moodData = moods; // Оновлюємо стан
+        moodData = moods;
       });
     });
   }
 
   void _changeMonth(String newMonth) {
     setState(() {
-      selectedMonth = newMonth; // Оновлюємо обраний місяць
-      _fetchMoodData(); // Оновлюємо дані для нового місяця
+      selectedMonth = newMonth;
+      _fetchMoodData();
     });
   }
 
-  // Функція для додавання настрою
   Future<void> _addMood() async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
     final user = _auth.currentUser;
@@ -76,7 +73,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     final String userId = user.uid;
     String selectedMood = '';
 
-    // Показуємо діалогове вікно для вибору настрою
     await showDialog<String>(
       context: context,
       builder: (context) {
@@ -92,7 +88,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                   ),
                   onTap: () {
                     selectedMood = mood;
-                    Navigator.of(context).pop(mood); // Закриваємо діалог та передаємо вибір
+                    Navigator.of(context).pop(mood);
                   },
                 );
               }).toList(),
@@ -102,10 +98,8 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
       },
     ).then((value) {
       if (value != null) {
-        // Отримуємо поточну дату
         final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-        // Додаємо вибраний настрій в Firestore
         FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
@@ -115,7 +109,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
           'mood': selectedMood,
         }).then((_) {
           print("Mood added successfully!");
-          _fetchMoodData(); // Оновлюємо дані після додавання
+          _fetchMoodData();
         }).catchError((error) {
           print("Error adding mood: $error");
         });
@@ -124,7 +118,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
   }
 
   Widget _buildAddMoodButton() {
-    return Center(  // Додаємо обгортку для вирівнювання по центру
+    return Center(
       child: ElevatedButton(
         onPressed: _addMood,
         style: ElevatedButton.styleFrom(
@@ -248,7 +242,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     ),
                     itemCount: calculateRowsForMonth(selectedYear, selectedMonthNum) * 7,
                     itemBuilder: (context, index) {
-                      // Якщо індекс у перших порожніх клітинках
                       if (index < weekdayOfFirstDay - 1) {
                         return Container(
                           decoration: BoxDecoration(
@@ -260,7 +253,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
 
                       final day = index - (weekdayOfFirstDay - 1) + 1;
 
-                      // Якщо день виходить за межі місяця
                       if (day > totalDaysInMonth) {
                         return Container(
                           decoration: BoxDecoration(
@@ -295,7 +287,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                   ),
                 ),
                 SizedBox(height: 20),
-                // Кнопка для додавання настрою
                 _buildAddMoodButton(),
               ],
             ),
@@ -306,7 +297,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
   }
 }
 
-// Допоміжні функції для обчислень
 int calculateRowsForMonth(int year, int month) {
   final firstDayOfMonth = DateTime(year, month, 1);
   final weekdayOfFirstDay = firstDayOfMonth.weekday;

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:kurs/program/MainPage.dart';
 import '../components/ButtonField.dart';
 import '../components/LogoImage.dart';
@@ -22,8 +23,18 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  bool isPasswordVisible = false;
 
   void signUserIn() async {
+    if (passwordController.text.length < 6) {
+      ErrorDialog.show(
+        context,
+        'Password must be at least 6 characters long.',
+        'Error',
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -34,51 +45,42 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     try {
-      // Виконуємо вхід користувача
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
 
-      // Після успішного входу, перевіряємо стан автентифікації
       User? user = userCredential.user;
 
-      // Close the loading dialog
       Navigator.pop(context);
 
       if (user != null) {
-        // Якщо користувач авторизований, перенаправляємо на MainPage і очищуємо стек
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => MainPage()),
-              (route) => false, // Очищаємо стек навігації
+              (route) => false,
         );
       }
-
     } on FirebaseAuthException catch (e) {
-      // Close the loading dialog in case of an error
       Navigator.pop(context);
 
       String errorMessage;
 
-      // Обробка помилок
       if (e.code == 'user-not-found') {
         errorMessage = 'You are not registered.';
-      }
-      else if (e.code == 'wrong-password') {
+      } else if (e.code == 'wrong-password') {
         errorMessage = 'Wrong password. Try again.';
-      }
-      else {
+      } else {
         errorMessage = 'Unable to sign in. Check your email or/and password.';
       }
 
       ErrorDialog.show(
-          context, errorMessage, 'Error');
-
+        context, errorMessage, 'Error',
+      );
     } catch (e) {
-      // Для несподіваних помилок
       ErrorDialog.show(
-          context, 'Something went wrong. Please try again.', 'Error');
+        context, 'Something went wrong. Please try again.', 'Error',
+      );
     }
   }
 
@@ -98,18 +100,18 @@ class _LoginPageState extends State<LoginPage> {
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children:[
-                // text
+              children: [
                 Container(
-                    margin: const EdgeInsets.only(top:96.0, bottom: 32.0),
-                    child: const Text("Sign in",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 32.0,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Montserrat',
-                      ),
-                    )
+                  margin: const EdgeInsets.only(top: 96.0, bottom: 32.0),
+                  child: const Text(
+                    "Sign in",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 32.0,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Montserrat',
+                    ),
+                  ),
                 ),
 
                 // username input
@@ -119,22 +121,60 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: false,
                 ),
 
-                //password input
-                InputField(
-                  controller: passwordController,
-                  hintText: "Password",
-                  obscureText: true,
+                Container(
+                  margin: const EdgeInsets.only(top: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 36.0),
+                  child: TextField(
+                    controller: passwordController,
+                    obscureText: !isPasswordVisible,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(30),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      hintText: "Password",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      fillColor: const Color(0xFFFBF4FF),
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: Colors.grey.shade700,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordVisible = !isPasswordVisible;
+                          });
+                        },
+                      ),
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14.0,
+                        fontFamily: 'Montserrat',
+                      ),
+                    ),
+                  ),
                 ),
 
-                //forgot password
+                // forgot password
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 36.0, vertical: 8.0 ),
+                  padding: const EdgeInsets.symmetric(horizontal: 36.0, vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       GestureDetector(
-                        onTap: (){
-                          Navigator.push(context,
+                        onTap: () {
+                          Navigator.push(
+                              context,
                               MaterialPageRoute(builder: (context) {
                                 return ForgotPasswordPage();
                               }));
@@ -142,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           "Forgot Password?",
                           style: TextStyle(
-                            color: Color(0xFF3763FF),
+                            color: const Color(0xFF3763FF),
                           ),
                         ),
                       )
@@ -150,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                //sign in button
+                // sign in button
                 ButtonField(
                   onTap: () {
                     signUserIn();
@@ -172,7 +212,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Or continue with',
+                        child: Text(
+                          'Or continue with',
                           style: TextStyle(
                             color: Colors.grey[700],
                             fontSize: 12.0,
@@ -190,21 +231,21 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                // gl + ln + fb buttons
+                // gl + gh  buttons
                 Center(
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         LogoImage(
                           imagePath: 'assets/images/google_logo.png',
-                          onTap: () => GoogleAuthService().signInWithGoogle(context),),
+                          onTap: () => GoogleAuthService().signInWithGoogle(context),
+                        ),
                         const SizedBox(width: 32.0),
                         LogoImage(
                           imagePath: 'assets/images/github_logo.png',
                           onTap: () => GithubAuthService().signInWithGithub(context),
                         ),
-                      ]
-                  ),
+                      ]),
                 ),
 
                 // sign up
@@ -224,7 +265,11 @@ class _LoginPageState extends State<LoginPage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => RegisterPage(onTap: () {  },)),
+                            MaterialPageRoute(
+                              builder: (context) => RegisterPage(
+                                onTap: () {},
+                              ),
+                            ),
                           );
                         },
                         child: const Text(
@@ -238,8 +283,6 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 )
-
-
               ],
             ),
           ),

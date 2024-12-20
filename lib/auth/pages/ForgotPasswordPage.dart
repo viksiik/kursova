@@ -41,10 +41,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         errorMessage = 'An unexpected error occurred. Please try again.';
       }
 
-      // Виводимо помилку користувачеві
       ErrorDialog.show(context, errorMessage, 'Error');
     } catch (e) {
-      // Виводимо несподівану помилку
       ErrorDialog.show(context, 'An unexpected error occurred.','Error');
     }
   }

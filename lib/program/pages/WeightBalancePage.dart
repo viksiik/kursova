@@ -28,7 +28,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
   Color fullColor = Color(0xFF8587F8);
   Color lowerColor = Color(0xFF8CEAF2);
 
-  Map<DateTime, double> weightData = {}; // Changed from int to double for weight
+  Map<DateTime, double> weightData = {};
   double todayWeight = 0.0;
   double goalWeight = 0.0;
   double averageWeight = 0.0;
@@ -44,7 +44,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    userId = user.uid; // ID користувача
+    userId = user.uid;
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -78,19 +78,16 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
 
     switch (selectedFilter) {
       case 'week':
-      // End date is the start of the week (Monday)
-        endDate = now.subtract(Duration(days: now.weekday - 1)); // Start of the week
+        endDate = now.subtract(Duration(days: now.weekday - 1));
         break;
       case 'month':
-      // End date is the start of the month
-        endDate = DateTime(now.year, now.month, 1); // Start of the month
+        endDate = DateTime(now.year, now.month, 1);
         break;
       case 'year':
-      // End date is the start of the year
-        endDate = DateTime(now.year, 1, 1); // Start of the year
+        endDate = DateTime(now.year, 1, 1);
         break;
       default:
-        endDate = DateTime(2000); // Default case
+        endDate = DateTime(2000);
         break;
     }
 
@@ -101,7 +98,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
         .snapshots()
         .listen((QuerySnapshot snapshot) {
       Map<DateTime, double> tempData = {};
-      Map<int, List<double>> monthlyData = {};  // For storing water data per month
+      Map<int, List<double>> monthlyData = {};
 
       double sum = 0;
       int count = 0;
@@ -158,12 +155,12 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
           Map<DateTime, double> monthlyAverages = {};
           monthlyData.forEach((month, amounts) {
             double sum = amounts.reduce((a, b) => a + b);
-            double average = (sum / amounts.length);  // Rounding to the nearest integer
+            double average = (sum / amounts.length);
             DateTime monthDate = DateTime(now.year, month);
             monthlyAverages[monthDate] = average;
           });
 
-          weightData = monthlyAverages; // Update waterData to hold integer monthly averages
+          weightData = monthlyAverages;
         }
         averageWeight = count > 0 ? sum / count : 0;
       });
@@ -179,16 +176,15 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
         .collection('users')
         .doc(currentUser?.uid)
         .collection('weight_balance')
-        .doc(formattedDate); // Use the formatted date as document ID
+        .doc(formattedDate);
 
-    // Overwrite the existing data or add new data for today
     await weightRef.set({
       'amount': weight,
-      'date': formattedDate, // Store the formatted date as a string
+      'date': formattedDate,
     });
 
     print("Weight data updated for today: $weight");
-    fetchActivityData(); // Refresh the data
+    fetchActivityData();
   }
 
 
@@ -266,12 +262,12 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selectedFilter == filterName
-              ? Color(0xFF8587F8) // Фіолетове підсвічування при виборі
+              ? Color(0xFF8587F8)
               : Color(0xFFFBF4FF),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
-            width: 1, // Товщина обведення
+            color: Colors.grey.withOpacity(0.1),
+            width: 1,
           ),
           boxShadow: selectedFilter == filterName
               ? [
@@ -369,9 +365,9 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
                           DateTime date = sortedDates[value.toInt()];
                           return Text(
                             selectedFilter == 'month'
-                                ? "${date.day}"  // Display only the day if filter is "month"
+                                ? "${date.day}"
                                 : selectedFilter == 'year'
-                                ? "${_getMonthShort(date.month)}"  // Display the month name if filter is "year"
+                                ? "${_getMonthShort(date.month)}"
                                 : "${date.day} ${_getMonthShort(date.month)}",
                             style: const TextStyle(
                               fontSize: 10,
@@ -443,7 +439,6 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
               ),
             ),
           ),
-          // Stats
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -468,7 +463,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '$category:', // Display the value as a rounded double
+              '$category:',
               style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 16.0,
@@ -476,7 +471,7 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
               ),
             ),
             Text(
-              ' ${value.toStringAsFixed(1)} kg', // Display the value as a rounded double
+              ' ${value.toStringAsFixed(1)} kg',
               style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 16.0
@@ -497,11 +492,11 @@ class _WeightBalancePageState extends State<WeightBalancePage> {
   }
 
   Widget _buildAddWeightButton() {
-    return Center(  // Додаємо обгортку для вирівнювання по центру
+    return Center(
       child: ElevatedButton(
         onPressed: _showWeightInputDialog,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF8587F8), // Вибір кольору кнопки
+          backgroundColor: Color(0xFF8587F8),
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
           textStyle: const TextStyle(
             fontFamily: 'Montserrat',
@@ -579,23 +574,19 @@ class _RangeInputFormatter extends TextInputFormatter {
       TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text;
 
-    // Дозволяємо очищати поле
     if (text.isEmpty) {
       return newValue;
     }
 
-    // Якщо текст не є числом, повертаємо старе значення
     final double? value = double.tryParse(text);
     if (value == null) {
       return oldValue;
     }
 
-    // Якщо число виходить за межі, повертаємо старе значення
     if (value < min || value > max) {
       return oldValue;
     }
 
-    // Ігноруємо все, що йде після однієї цифри після коми
     final decimalIndex = text.indexOf('.');
     if (decimalIndex != -1 && text.length - decimalIndex > 2) {
       final truncatedText = text.substring(0, decimalIndex + 2);
@@ -605,7 +596,6 @@ class _RangeInputFormatter extends TextInputFormatter {
       );
     }
 
-    // Якщо значення коректне, залишаємо його
     return newValue;
   }
 }

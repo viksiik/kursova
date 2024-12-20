@@ -38,19 +38,18 @@ class _ActivityPageState extends State<ActivityPage> {
       return;
     }
 
-    // Визначаємо startDate відповідно до обраного фільтру
     switch (selectedFilter) {
       case 'week':
-        startDate = now.subtract(Duration(days: now.weekday - 1)); // Початок тижня (понеділок)
+        startDate = now.subtract(Duration(days: now.weekday - 1));
         break;
       case 'month':
-        startDate = DateTime(now.year, now.month, 1); // Початок місяця
+        startDate = DateTime(now.year, now.month, 1);
         break;
       case 'year':
-        startDate = DateTime(now.year); // Початок року
+        startDate = DateTime(now.year);
         break;
-      default: // All time
-        startDate = DateTime(2000); // Дата для всіх документів
+      default:
+        startDate = DateTime(2000);
         break;
     }
 
@@ -59,14 +58,12 @@ class _ActivityPageState extends State<ActivityPage> {
         .doc(currentUser?.uid)
         .collection('Activity');
 
-    // Додаємо фільтрацію за датою
     QuerySnapshot activitySnapshot = await activityRef.get();
 
     Map<String, int> tempStats = {'Abs': 0, 'Lower body': 0, 'Full body': 0};
 
     for (var doc in activitySnapshot.docs) {
       try {
-        // ID документів — це дати
         DateTime date = DateTime.parse(doc.id);
 
         if (date.isAfter(startDate) || date.isAtSameMomentAs(startDate)) {
@@ -92,7 +89,6 @@ class _ActivityPageState extends State<ActivityPage> {
         lowerBodyRounded = ((stats['Lower body']! / sumActivity) * 100).round();
         fullBodyRounded = ((stats['Full body']! / sumActivity) * 100).round();
 
-        // Корекція відсотків
         int total = absRounded + lowerBodyRounded + fullBodyRounded;
         if (total != 100) {
           final difference = 100 - total;
@@ -126,12 +122,12 @@ class _ActivityPageState extends State<ActivityPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selectedFilter == filterName
-              ? Color(0xFF8587F8) // Фіолетове підсвічування при виборі
+              ? Color(0xFF8587F8)
               : Color(0xFFFBF4FF),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.grey.withOpacity(0.1), // Фіолетове обведення
-            width: 1, // Товщина обведення
+            color: Colors.grey.withOpacity(0.1),
+            width: 1,
           ),
 
           boxShadow: selectedFilter == filterName
@@ -140,14 +136,14 @@ class _ActivityPageState extends State<ActivityPage> {
               color: Color(0xFF8587F8).withOpacity(0.4),
               spreadRadius: 2,
               blurRadius: 6,
-              offset: Offset(0, 3), // Зміщення тіні
+              offset: Offset(0, 3),
             ),
           ]
               : [BoxShadow(
             color: Colors.grey.withOpacity(0.2),
             spreadRadius: 2,
             blurRadius: 6,
-            offset: Offset(0, 3), // Зміщення тіні
+            offset: Offset(0, 3),
           ),],
         ),
         child: Text(
@@ -173,7 +169,6 @@ class _ActivityPageState extends State<ActivityPage> {
 
     final double sumActivity = abs.toDouble() + lowerBody.toDouble() + fullBody.toDouble();
 
-    // Створимо змінні для відсотків
     late int absRounded, lowerBodyRounded, fullBodyRounded;
 
     List<PieChartSectionData> sections = [
@@ -194,7 +189,6 @@ class _ActivityPageState extends State<ActivityPage> {
       lowerBodyRounded = lowerBodyPercentage.round();
       fullBodyRounded = fullBodyPercentage.round();
 
-      // Корекція відсотків до 100%
       int total = absRounded + lowerBodyRounded + fullBodyRounded;
       if (total != 100) {
         final difference = 100 - total;
@@ -258,7 +252,6 @@ class _ActivityPageState extends State<ActivityPage> {
           ),
       body: Column(
         children: [
-          // Фільтри
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -273,7 +266,7 @@ class _ActivityPageState extends State<ActivityPage> {
             ],
           ),
           const SizedBox(height: 32),
-          // Графік
+
           Container(
             height: 200,
             width: 200,
@@ -284,7 +277,7 @@ class _ActivityPageState extends State<ActivityPage> {
             }),
           ),
           const SizedBox(height: 24),
-          // Підсумки
+
           Column(
             children: [
               buildStatRow('Abs', abs_color, absRounded),

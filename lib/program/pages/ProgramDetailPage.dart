@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WeightLossProgramDetails extends StatefulWidget {
-  final String programId; // ID програми
+  final String programId;
 
   const WeightLossProgramDetails({
     Key? key,
@@ -38,14 +38,12 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
       final doc = await _firestore.collection('programs').doc(widget.programId).get();
       if (doc.exists) {
         String duration = doc['duration'] ?? '';
-        print('Duration: $duration'); // Виводимо значення duration для перевірки
-
-        // Використовуємо регулярний вираз для витягування числа з рядка
+        print('Duration: $duration');
         final match = RegExp(r'(\d+)').firstMatch(duration);
 
         if (match != null) {
           final weeks = int.tryParse(match.group(0) ?? '0') ?? 0;
-          print('Weeks: $weeks'); // Виводимо число тижнів, щоб перевірити
+          print('Weeks: $weeks');
 
           if (weeks > 0) {
             setState(() {
@@ -53,8 +51,7 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
             });
             print('Total Days: $_totalDays');
 
-            // Тепер, коли ми знаємо totalDays, оновлюємо Firestore
-            await _updateTotalDaysInFirestore(); // Викликаємо оновлення totalDays
+            await _updateTotalDaysInFirestore();
           } else {
             print('Invalid weeks count');
           }
@@ -111,7 +108,6 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
     });
   }
 
-  /// Завантажує прогрес користувача (виконані дні).
   Future<void> fetchUserProgress() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -142,7 +138,7 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
       print('Error fetching user progress: $e');
     }
   }
-  /// Перевіряє, чи завершено програму.
+
   Future<void> _checkProgramCompletion() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -159,14 +155,13 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
             .collection('currentProgram')
             .doc(widget.programId)
             .update({
-          'isActive': false, // Встановлюємо воркаут як неактивний
-          'completionDate': DateTime.now().toIso8601String(), // Додаємо дату завершення
+          'isActive': false,
+          'completionDate': DateTime.now().toIso8601String(),
         });
 
         _showMessage("Congratulations! You have completed this program.");
 
         setState(() {
-          // Локально оновлюємо стан, щоб відобразити зміни
           _completedDays = _totalDays;
         });
       }
@@ -175,7 +170,6 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
     }
   }
 
-  /// Завершує програму вручну.
   Future<void> _stopProgramManually() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -191,14 +185,14 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
           .collection('currentProgram')
           .doc(widget.programId)
           .update({
-        'isActive': false, // Зупиняємо воркаут
-        'StoppedDate': DateTime.now().toIso8601String(), // Фіксуємо дату зупинки
+        'isActive': false,
+        'StoppedDate': DateTime.now().toIso8601String(),
       });
 
       _showMessage("Program has been stopped.");
 
       setState(() {
-        _completedDays = 0; // Скидаємо виконані дні
+        _completedDays = 0;
       });
     } catch (e) {
       print('Error stopping program manually: $e');
@@ -221,7 +215,6 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
 
     if (dayNumber > _completedDays) {
       try {
-        // Оновлення прогресу користувача в поточній програмі
         await _firestore
             .collection('users')
             .doc(user.uid)
@@ -237,10 +230,10 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
           _completedDays = dayNumber;
         });
 
-        // Завантаження категорії програми
+
         final programDoc = await _firestore.collection('programs').doc(widget.programId).get();
         if (programDoc.exists) {
-          final category = programDoc['category']; // Отримуємо категорію програми
+          final category = programDoc['category'];
           print('Program category: $category');
 
           if (category == 'Abs' || category == 'Lower body' || category == 'Full body') {
@@ -248,22 +241,20 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
             final formattedDate =
                 "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
 
-            // Create/update the activity data for the category
             await _firestore
                 .collection('users')
                 .doc(user.uid)
                 .collection('Activity')
-                .doc(formattedDate) // Використовуємо поточну дату як ідентифікатор документа
+                .doc(formattedDate)
                 .set({
-              category: FieldValue.increment(1), // Збільшуємо відповідну категорію на 1
+              category: FieldValue.increment(1),
             }, SetOptions(merge: true));
 
             print('Incremented $category activity for $formattedDate');
 
-            // Now check and create the other two categories if they don't exist
             final categoriesToCheck = ['Lower body', 'Full body', 'Abs'];
             for (var cat in categoriesToCheck) {
-              // If the activity for the category doesn't exist yet, create it
+
               final activityDoc = await _firestore
                   .collection('users')
                   .doc(user.uid)
@@ -272,9 +263,8 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
 
               final activityData = await activityDoc.get();
               if (activityData.exists && !activityData.data()!.containsKey(cat)) {
-                // If the category does not exist, add it
                 await activityDoc.update({
-                  cat: FieldValue.increment(0), // Initialize the category if not already present
+                  cat: FieldValue.increment(0),
                 });
                 print('Created $cat activity for $formattedDate');
               }
@@ -287,7 +277,6 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
           print('Program document not found');
         }
 
-        // Перевіряємо завершення програми
         await _checkProgramCompletion();
       } catch (e) {
         print('Error updating completed days: $e');
@@ -389,11 +378,11 @@ class _WeightLossProgramDetailsState extends State<WeightLossProgramDetails> {
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0), // Padding inside the button
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0),
                 shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24.0), // Corner radius
+                borderRadius: BorderRadius.circular(24.0),
               ),
-              elevation: 5, // Button shadow
+              elevation: 5,
              ), child: const Text(
               "Stop Program",
               style: TextStyle(fontSize: 16),

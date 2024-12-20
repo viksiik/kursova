@@ -89,7 +89,7 @@ class _MoodTrackerState extends State<MoodTracker> {
                       navigatorKey.currentState?.push(
                         MaterialPageRoute(
                           builder: (context) =>
-                              MoodTrackerPage(), // Navigate to WeightPage
+                              MoodTrackerPage(),
                         ),
                       );
                     },
@@ -130,11 +130,10 @@ class _MoodTrackerState extends State<MoodTracker> {
 
                   Container(
                     height: 350,
-                    //margin: const EdgeInsets.only(bottom: 64.0),
-                    // padding: const EdgeInsets.only(bottom: 32.0),
+
                     child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
-                      // Щоб грід не прокручувався
+
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 7,
                         crossAxisSpacing: 8,
@@ -152,12 +151,12 @@ class _MoodTrackerState extends State<MoodTracker> {
                             .now()
                             .month, 1);
                         final weekdayOfFirstDay = firstDayOfMonth
-                            .weekday; // Це день тижня для 1-го числа місяця
+                            .weekday;
                         final totalDaysInMonth = DateTime(DateTime
                             .now()
                             .year, DateTime
                             .now()
-                            .month + 1, 0).day; // Кількість днів у місяці
+                            .month + 1, 0).day;
 
                         final totalCells = _daysInMonth(DateTime
                             .now()
@@ -175,17 +174,15 @@ class _MoodTrackerState extends State<MoodTracker> {
                           );
                         }
 
-                        // Визначаємо день місяця
                         final day = index - (weekdayOfFirstDay - 1) +
-                            1; // Визначаємо день місяця
+                            1;
 
-                        // Якщо індекс більший за кількість днів у місяці, повертаємо порожню клітинку
                         if (day > totalDaysInMonth) {
                           return Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.grey.shade300.withOpacity(
-                                  0.5), // Порожні клітинки після останнього дня місяця
+                                  0.5),
                             ),
                           );
                         }
@@ -278,30 +275,25 @@ String _getMonthName(int month) {
 }
 
 int _daysInMonth(int year, int month) {
-  // Перевіряємо лютий на високосний рік
   if (month == 2) {
     return _isLeapYear(year) ? 29 : 28;
   }
 
-  // Список днів для інших місяців
   List<int> daysPerMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return daysPerMonth[month - 1];
 }
 
-// Допоміжний метод для перевірки високосного року
 bool _isLeapYear(int year) {
   return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
 int calculateRowsForMonth(int year, int month) {
   final firstDayOfMonth = DateTime(year, month, 1);
-  final weekdayOfFirstDay = firstDayOfMonth.weekday; // День тижня для першого дня місяця
-  final totalDaysInMonth = DateTime(year, month + 1, 0).day; // Кількість днів у місяці
+  final weekdayOfFirstDay = firstDayOfMonth.weekday;
+  final totalDaysInMonth = DateTime(year, month + 1, 0).day;
 
-  // Рахуємо скільки тижнів (рядків) потрібно для розміщення всіх днів
   int rows = (totalDaysInMonth + weekdayOfFirstDay - 1) ~/ 7;
 
-  // Якщо залишок від ділення є, додаємо ще один рядок
   if ((totalDaysInMonth + weekdayOfFirstDay - 1) % 7 != 0) {
     rows++;
   }

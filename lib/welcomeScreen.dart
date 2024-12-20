@@ -9,7 +9,7 @@ class welcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Color(0xFFE6B7FF),
-        body: Container(//Padding(
+        body: Container(
           padding: EdgeInsets.zero,
           child: SingleChildScrollView(
             child: Column(
@@ -66,8 +66,8 @@ class welcomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.w400,
-                        color: Colors.black, // Колір тексту
-                        fontSize: 18.0, // Розмір шрифта
+                        color: Colors.black,
+                        fontSize: 18.0,
                       ),
                     ),
                   ),

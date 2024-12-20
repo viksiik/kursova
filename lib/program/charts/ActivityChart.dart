@@ -5,23 +5,35 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:kurs/program/pages/ActivityPage.dart';
 
 import '../../main.dart';
-import 'UpdatingActivityChart.dart'; // Імпортуйте потрібний файл
 
-class ActivityChart extends StatelessWidget {
+
+class ActivityChart extends StatefulWidget {
+
+  @override
+  _ActivityChartState createState() =>
+      _ActivityChartState();
+}
+
+class _ActivityChartState extends State<ActivityChart> {
 
   Color abs_color = Color(0xFFFFDC66);
   Color full_color = Color(0xFF8587F8);
   Color lower_color = Color(0xFF8CEAF2);
+
+  @override
+  void initState() {
+    super.initState();
+    fetchActivityData();
+  }
 
   Stream<Map<String, int>> fetchActivityData() {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
       print("No authenticated user found.");
-      return Stream.value({});  // Повертаємо потік з порожнім Map у разі відсутності користувача
+      return Stream.value({});
     }
 
-    // Підписуємось на зміни у колекції Activity
     return FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser.uid)
@@ -130,19 +142,19 @@ class ActivityChart extends StatelessWidget {
       sections = [
         PieChartSectionData(
           value: absRounded.toDouble(),
-          title: '', // Приховуємо титул всередині секції
+          title: '',
           color: abs_color,
           radius: 12,
         ),
         PieChartSectionData(
           value: lowerBodyRounded.toDouble(),
-          title: '', // Приховуємо титул всередині секції
+          title: '',
           color: lower_color,
           radius: 12,
         ),
         PieChartSectionData(
           value: fullBodyRounded.toDouble(),
-          title: '', // Приховуємо титул всередині секції
+          title: '',
           color: full_color,
           radius: 12,
         ),
@@ -167,7 +179,7 @@ class ActivityChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Розподіляє елементи по рядку
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 "Activity",
@@ -186,7 +198,7 @@ class ActivityChart extends StatelessWidget {
                 onPressed: () {
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
-                      builder: (context) => ActivityPage(), // Замість NewPage ваша нова сторінка
+                      builder: (context) => ActivityPage(),
                     ),
                   );
                 },

@@ -30,7 +30,7 @@ class HeightPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Color(0xFFE6B7FF),
         flexibleSpace: Center(
-          child: Indicator(currentValue: 1), // Розміщуємо Indicator по центру AppBar
+          child: Indicator(currentValue: 1),
         ),
       ),
       body: Center(

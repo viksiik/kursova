@@ -36,9 +36,9 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
       return;
     }
 
-    userId = user.uid; // ID користувача
+    userId = user.uid;
     DateTime today = DateTime.now();
-    DateTime startOfMonth = DateTime(today.year, today.month, 1); // First day of the current month
+    DateTime startOfMonth = DateTime(today.year, today.month, 1);
 
     FirebaseFirestore.instance
         .collection('users')
@@ -55,11 +55,10 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
           DateTime date = DateTime.parse(doc.id);
           int waterAmount = (doc.data() as Map<String, dynamic>)['amount'] ?? 0;
 
-          // Include data only from the current month
+
           if (date.month == today.month && date.year == today.year) {
             tempData[date] = waterAmount;
 
-            // Сьогоднішня кількість
             if (date.day == today.day) {
               todayWater = waterAmount;
             }
@@ -83,7 +82,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    userId = user.uid; // ID користувача
+    userId = user.uid;
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -159,7 +158,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                 onPressed: () {
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
-                      builder: (context) => WaterBalancePage(), // Замість NewPage ваша нова сторінка
+                      builder: (context) => WaterBalancePage(),
                     ),
                   );
                 },
@@ -190,7 +189,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
               height: 150,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: false, drawVerticalLine: false), // Сітка
+                  gridData: FlGridData(show: false, drawVerticalLine: false),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
@@ -276,7 +275,7 @@ class _WaterBalanceWidgetState extends State<WaterBalanceWidget> {
                   maxY: _calculateMaxY(),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: _generateChartDataForMonth(), // Данні для поточного місяця
+                      spots: _generateChartDataForMonth(),
                       isCurved: false,
                       color: Color(0xFF8587F8),
                       barWidth: 2,
