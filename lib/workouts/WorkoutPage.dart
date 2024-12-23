@@ -251,15 +251,15 @@ class _MainWorkoutPageState extends State<MainWorkoutPage> {
               ),
               Wrap(
                 spacing: 8.0,
-                children: ['beginner', 'intermediate', 'advanced']
+                children: ['beginner', 'intermediate', "advanced"]
                     .map((difficulty) => ChoiceChip(
                   label: Text(difficulty, style: TextStyle(
                     fontFamily: 'Montserrat',
                   ),),
-                  selected: selectedCategory == difficulty,
+                  selected: selectedDifficulty == difficulty,
                   onSelected: (isSelected) {
                     setState(() {
-                      selectedCategory = isSelected ? difficulty : null;
+                      selectedDifficulty = isSelected ? difficulty : null;
                     });
                     applyFilters();
                   },
